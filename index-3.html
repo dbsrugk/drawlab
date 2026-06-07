@@ -1,0 +1,5121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRAWLAB · 펑키 시안 생성기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Archivo+Black&family=Bricolage+Grotesque:wght@700;800&family=Nanum+Gothic:wght@400;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+<style>
+:root{
+  --red:#c0392b;
+  --red-dark:#9a2c21;
+  --red-soft:#fdf3f1;
+  --ink:#1a1a1a;
+  --ink-2:#3a3a3a;
+  --ink-3:#888;
+  --paper:#fafaf7;
+  --paper-2:#f3f1ec;
+  --line:#e8e5df;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'Nanum Gothic',-apple-system,sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  font-size:13px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+input,textarea,select{font-family:inherit;}
+
+.app{display:grid;grid-template-columns:340px 1fr;height:100vh;}
+
+/* ===== 좌측 패널 (전체 자연 스크롤) ===== */
+.panel{
+  background:#fff;
+  border-right:1px solid var(--line);
+  overflow-y:auto;
+}
+.panel::-webkit-scrollbar{width:5px;}
+.panel::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+
+/* ===== 탭 (상단 sticky) ===== */
+.tabs{
+  display:flex;
+  border-bottom:1px solid var(--line);
+  background:var(--paper-2);
+  position:sticky;
+  top:0;
+  z-index:5;
+}
+.tab{
+  flex:1;padding:14px 10px;
+  font-size:12px;font-weight:800;letter-spacing:-0.3px;
+  color:var(--ink-3);
+  border-bottom:2px solid transparent;
+  position:relative;transition:all .15s;
+}
+.tab small{
+  display:block;font-size:9px;font-weight:400;letter-spacing:1.5px;
+  margin-top:2px;font-family:'JetBrains Mono',monospace;
+}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--ink);background:#fff;border-bottom-color:var(--red);}
+.tab.active small{color:var(--red);}
+
+/* ===== 브랜드 미니 ===== */
+.brand-mini{
+  padding:10px 16px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:8px;background:#fff;
+}
+.logo-box{
+  background:var(--red);color:#fff;
+  font-weight:800;font-size:11px;padding:3px 6px;letter-spacing:-0.3px;
+}
+.brand-name{font-size:11px;font-weight:700;letter-spacing:-0.2px;}
+.brand-sub{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:11px;color:var(--ink-3);margin-left:auto;
+}
+
+/* ===== 10원칙 접힘 ===== */
+.principles{
+  padding:10px 16px;
+  background:linear-gradient(135deg,#fff 0%,var(--red-soft) 100%);
+  border-bottom:1px solid var(--line);
+  cursor:pointer;position:relative;
+}
+.principles::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;
+  width:2px;background:var(--red);
+}
+.principles-head{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:10px;font-weight:800;color:var(--ink-2);letter-spacing:0.3px;
+}
+.principles-head em{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;color:var(--red);
+}
+.principles-arrow{color:var(--red);transition:transform .2s;font-size:11px;}
+.principles.open .principles-arrow{transform:rotate(90deg);}
+.principles-body{display:none;margin-top:8px;font-size:10px;color:var(--ink-2);line-height:1.6;}
+.principles.open .principles-body{display:block;}
+.principles-body ol{margin:0;padding-left:14px;}
+.principles-body li b{color:var(--red);}
+
+/* ===== 접기/펼치기 가능한 섹션 ===== */
+.section.is-collapsible > .section-head{cursor:pointer;user-select:none;}
+.section.is-collapsible > .section-head:hover{color:var(--red);}
+.section.is-collapsible > .section-head .section-title::before{
+  content:'▼';display:inline-block;font-size:8px;color:var(--ink-3);
+  margin-right:6px;transition:transform 0.15s;vertical-align:middle;
+}
+.section.is-collapsible.is-collapsed > .section-head .section-title::before{
+  transform:rotate(-90deg);
+}
+.section.is-collapsible.is-collapsed > *:not(.section-head){display:none !important;}
+.section.is-collapsible.is-collapsed{padding-bottom:12px;}
+
+/* ===== 스크롤 영역 (이제 일반 흐름) ===== */
+.scroll{}
+
+.section{padding:12px 16px;border-bottom:1px solid var(--line);}
+.section:last-of-type{border-bottom:none;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.section-title{
+  font-size:10px;font-weight:800;letter-spacing:1.2px;
+  color:var(--ink-3);text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+}
+.section-title::before{content:"";width:10px;height:2px;background:var(--red);}
+.section-badge{font-size:9px;color:var(--ink-3);font-family:'JetBrains Mono',monospace;}
+
+/* ===== API 키 ===== */
+.api-row{display:flex;gap:5px;}
+.api-input{
+  flex:1;padding:7px 9px;
+  border:1px solid var(--line);background:var(--paper-2);
+  font-size:11px;font-family:'JetBrains Mono',monospace;outline:none;
+}
+.api-input:focus{border-color:var(--ink);background:#fff;}
+.api-save{
+  padding:7px 11px;background:var(--ink);color:#fff;
+  font-size:10px;font-weight:700;letter-spacing:0.5px;
+}
+.api-save:hover{background:var(--red);}
+.api-status{font-size:9px;margin-top:4px;color:var(--ink-3);font-family:'JetBrains Mono',monospace;}
+.api-status.ok{color:#1e7e34;}
+
+/* API 키 섹션 - 키 없을 때 빨간 강조 */
+.api-section{background:#fff;}
+.api-section.warn{background:linear-gradient(135deg,#fff 0%,var(--red-soft) 100%);}
+.api-section.warn .section-title{color:var(--red);}
+.api-section.ok #apiTitle::before{content:"✓ ";color:#1e7e34;}
+
+/* ===== 제시어 ===== */
+.prompt-input{
+  width:100%;padding:9px 10px;
+  border:1px solid var(--line);background:var(--paper-2);
+  font-size:12px;resize:none;outline:none;
+  font-family:inherit;line-height:1.45;
+}
+.prompt-input:focus{border-color:var(--ink);background:#fff;}
+.prompt-tip{font-size:9px;color:var(--ink-3);margin-top:5px;display:flex;gap:4px;flex-wrap:wrap;}
+.tip-chip{
+  padding:2px 7px;background:var(--paper-2);border:1px solid var(--line);
+  cursor:pointer;font-size:10px;transition:all .12s;
+}
+.tip-chip:hover{background:var(--red-soft);border-color:var(--red);color:var(--red);}
+
+/* ===== 참고 이미지 ===== */
+.dropzone{
+  border:1.5px dashed var(--line);background:var(--paper-2);
+  padding:12px;text-align:center;cursor:pointer;transition:all .25s;
+  position:relative;
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--red);background:var(--red-soft);}
+.dropzone.drag{
+  border-style:solid;
+  box-shadow:0 0 0 3px rgba(192,57,43,0.15);
+  transform:scale(1.01);
+}
+.dropzone.active-paste{
+  border-color:var(--red);
+  background:var(--red-soft);
+}
+.dropzone.active-paste::before{
+  content:"📋 paste";
+  position:absolute;
+  top:-8px;right:8px;
+  background:var(--red);
+  color:#fff;
+  font-size:8px;
+  padding:1px 6px;
+  letter-spacing:0.5px;
+  font-family:'JetBrains Mono',monospace;
+  font-weight:700;
+}
+.dropzone-text{font-size:10px;color:var(--ink-3);}
+.dropzone-text strong{color:var(--ink);font-size:11px;display:block;margin-bottom:1px;}
+
+.refs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px;}
+.ref-thumb{aspect-ratio:1;position:relative;overflow:hidden;border:1px solid var(--line);background:var(--paper-2);}
+.ref-thumb img{width:100%;height:100%;object-fit:cover;}
+.ref-del{
+  position:absolute;top:1px;right:1px;
+  width:16px;height:16px;background:rgba(0,0,0,.75);color:#fff;
+  font-size:10px;line-height:16px;text-align:center;cursor:pointer;
+}
+
+.analyze-btn{
+  width:100%;margin-top:6px;padding:8px;
+  background:#fff;border:1px solid var(--red);color:var(--red);
+  font-size:11px;font-weight:700;letter-spacing:0.3px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all .12s;
+}
+.analyze-btn:hover:not(:disabled){background:var(--red);color:#fff;}
+.analyze-btn:disabled{opacity:.4;cursor:not-allowed;}
+.analyze-btn .ico{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:14px;}
+.mini-spin{
+  width:11px;height:11px;
+  border:1.5px solid currentColor;border-top-color:transparent;
+  border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;
+}
+
+/* ===== 수량/품질 칩 ===== */
+.count-row{display:flex;gap:5px;}
+.count-chip{
+  flex:1;padding:7px 4px;border:1px solid var(--line);background:#fff;
+  text-align:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .12s;
+  line-height:1.2;
+}
+.count-chip:hover{border-color:var(--ink);}
+.count-chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.count-chip small{display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;}
+
+/* ===== 생성 버튼 (하단 자연 위치) ===== */
+.actions{
+  background:#fff;
+  padding:14px 16px 18px;
+}
+.generate-btn{
+  width:100%;padding:13px;background:var(--ink);color:#fff;
+  font-weight:800;font-size:12px;letter-spacing:1.5px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .15s;
+}
+.generate-btn:hover:not(:disabled){background:var(--red);}
+.generate-btn:disabled{background:#ccc;cursor:not-allowed;}
+.generate-btn .arrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;letter-spacing:0;}
+
+/* ===== 우측 캔버스 ===== */
+.canvas{
+  position:relative;overflow-y:auto;
+  background:
+    linear-gradient(var(--paper),var(--paper)),
+    repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(0,0,0,.015) 30px,rgba(0,0,0,.015) 60px);
+}
+.canvas::-webkit-scrollbar{width:8px;}
+.canvas::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+
+.canvas-header{
+  padding:14px 26px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:10;
+}
+.canvas-title{font-size:16px;font-weight:800;letter-spacing:-0.5px;display:flex;align-items:center;gap:10px;}
+.canvas-title em{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;color:var(--red);}
+.counter{
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-3);
+  padding:3px 8px;background:var(--paper-2);border:1px solid var(--line);
+}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100% - 60px);padding:30px;text-align:center;}
+.empty-art{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:100px;color:var(--red);opacity:.15;line-height:1;
+  margin-bottom:14px;font-weight:500;
+}
+.empty-title{font-size:20px;font-weight:800;margin-bottom:6px;letter-spacing:-0.5px;}
+.empty-desc{color:var(--ink-3);max-width:380px;font-size:12px;line-height:1.6;}
+.empty-flow{margin-top:24px;display:flex;gap:16px;align-items:center;}
+.flow-step{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.flow-num{
+  width:26px;height:26px;border:1px solid var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;
+}
+.flow-label{font-size:10px;color:var(--ink-3);}
+.flow-arr{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--red);font-size:18px;}
+
+/* ===== 결과 그리드 ===== */
+.results{padding:20px 26px 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;}
+.result-card{background:#fff;border:1px solid var(--line);position:relative;animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.result-img-wrap{position:relative;background:var(--paper-2);aspect-ratio:1.38/1;overflow:hidden;}
+.result-card.is-research .result-img-wrap{aspect-ratio:1/1;}
+.result-img-wrap img{width:100%;height:100%;object-fit:contain;transition:transform .3s ease;}
+.result-img-wrap[data-act="zoom"]:hover img{transform:scale(1.03);}
+.result-img-wrap[data-act="zoom"]::after{
+  content:"⊕ 확대";
+  position:absolute;
+  bottom:8px;
+  right:8px;
+  background:rgba(0,0,0,0.6);
+  color:#fff;
+  padding:3px 8px;
+  font-size:9px;
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.5px;
+  opacity:0;
+  transition:opacity .2s;
+  pointer-events:none;
+}
+.result-img-wrap[data-act="zoom"]:hover::after{opacity:1;}
+.result-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;}
+.spinner{
+  width:28px;height:28px;border:2px solid var(--line);
+  border-top-color:var(--red);border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:10px;color:var(--ink-3);font-family:'JetBrains Mono',monospace;letter-spacing:1px;}
+.error-msg{padding:16px;text-align:center;color:var(--red);font-size:11px;line-height:1.6;}
+
+.result-meta{padding:12px 14px;}
+.result-prompt{font-size:12px;font-weight:700;margin-bottom:6px;line-height:1.4;letter-spacing:-0.2px;}
+.result-tags{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:9px;}
+.result-tag{font-size:9px;padding:2px 6px;background:var(--paper-2);color:var(--ink-3);border:1px solid var(--line);}
+.result-tag.red{color:var(--red);border-color:var(--red);background:var(--red-soft);}
+.result-actions{display:flex;flex-wrap:wrap;gap:5px;border-top:1px solid var(--line);padding-top:9px;}
+.result-btn{
+  flex:1;padding:6px 8px;border:1px solid var(--line);background:#fff;
+  font-size:10px;font-weight:700;letter-spacing:0.3px;transition:all .12s;
+}
+.result-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+.result-btn.primary{background:var(--red);color:#fff;border-color:var(--red);}
+.result-btn.primary:hover{background:var(--red-dark);border-color:var(--red-dark);}
+
+.result-num{
+  position:absolute;top:6px;left:6px;
+  background:var(--red);color:#fff;padding:2px 7px;
+  font-size:9px;font-weight:800;font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.5px;z-index:1;
+}
+
+/* ===== 토스트 ===== */
+.toast{
+  position:fixed;bottom:20px;right:20px;
+  background:var(--ink);color:#fff;padding:10px 16px;
+  font-size:11px;font-weight:600;z-index:1000;
+  animation:toastIn .25s ease;border-left:3px solid var(--red);
+}
+@keyframes toastIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* ===== 모달 ===== */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:#fff;max-width:580px;width:100%;max-height:80vh;overflow-y:auto;border:1px solid var(--line);}
+.modal-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-weight:800;font-size:13px;}
+.modal-close{font-size:18px;cursor:pointer;color:var(--ink-3);}
+.modal-body{padding:18px;}
+.modal-section{margin-bottom:14px;}
+.modal-section h4{font-size:10px;color:var(--ink-3);font-weight:800;letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;}
+.modal-section pre{
+  background:var(--paper-2);padding:10px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.6;
+  white-space:pre-wrap;border-left:2px solid var(--red);max-height:300px;overflow-y:auto;
+}
+
+/* ===== 라이트박스 (이미지 확대 + 핀치줌/팬) ===== */
+.lightbox{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.96);
+  z-index:1000;
+  flex-direction:column;
+  animation:fadeIn .2s ease;
+}
+.lightbox.show{display:flex;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+.lb-top{
+  position:absolute;
+  top:0;left:0;right:0;
+  padding:14px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  z-index:10;
+  background:linear-gradient(rgba(0,0,0,0.6),transparent);
+  pointer-events:none;
+}
+.lb-top button{pointer-events:auto;}
+
+.lb-title{
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:-0.2px;
+  max-width:60%;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.lb-actions{display:flex;gap:8px;}
+.lb-btn{
+  width:40px;height:40px;
+  background:rgba(255,255,255,0.12);
+  color:#fff;
+  font-size:18px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);
+  transition:background .15s;
+  cursor:pointer;
+}
+.lb-btn:hover{background:rgba(255,255,255,0.22);}
+.lb-btn.danger:hover{background:var(--red);}
+
+.lb-img-wrap{
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.lb-img{
+  max-width:100%;
+  max-height:100%;
+  transform-origin:center center;
+  transition:transform .05s ease-out;
+  user-select:none;
+  -webkit-user-drag:none;
+  pointer-events:none;
+}
+.lb-img.transitioning{transition:transform .25s ease;}
+
+.lb-bottom{
+  padding:14px 20px 18px;
+  background:linear-gradient(transparent,rgba(0,0,0,0.7));
+  text-align:center;
+}
+.lb-prompt{
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:6px;
+  letter-spacing:-0.2px;
+}
+.lb-hint{
+  color:rgba(255,255,255,0.55);
+  font-size:10px;
+  font-family:'JetBrains Mono',monospace;
+  letter-spacing:0.5px;
+}
+.lb-zoom-indicator{
+  position:absolute;
+  bottom:74px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,0.7);
+  color:#fff;
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:11px;
+  font-family:'JetBrains Mono',monospace;
+  opacity:0;
+  transition:opacity .2s;
+  pointer-events:none;
+}
+.lb-zoom-indicator.show{opacity:1;}
+
+/* ===== 히스토리 카운터 / 액션 ===== */
+.history-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.history-clear{
+  font-size:10px;
+  color:var(--ink-3);
+  padding:4px 9px;
+  background:transparent;
+  border:1px solid var(--line);
+  cursor:pointer;
+  transition:all .12s;
+}
+.history-clear:hover{
+  color:var(--red);
+  border-color:var(--red);
+}
+.history-loading{
+  font-size:10px;
+  color:var(--ink-3);
+  font-family:'JetBrains Mono',monospace;
+}
+
+@media (max-width:900px){
+  html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
+  .app{grid-template-columns:1fr;grid-template-rows:auto auto;height:auto;min-height:100vh;}
+  .panel{max-height:none;overflow:visible;border-right:none;border-bottom:1px solid var(--line);}
+  .canvas{height:auto;min-height:50vh;}
+  .canvas-header{position:sticky;top:0;}
+}
+
+
+/* =========================================================================
+   ★ STEEL LAYER v5 ★  Premium · Steel · Precise · Modern
+   다크 그레이 + 메탈 그라디언트 + 소프트 보더
+   ========================================================================= */
+
+:root{
+  /* 배경 */
+  --paper:#fafafa;
+  --paper-2:#f4f4f4;
+  --paper-3:#ececec;
+  
+  /* 잉크 — 검정 대신 다크 그레이 */
+  --ink:#2a2a2a;       /* 메인 텍스트 (눈 안 아픈 다크 그레이) */
+  --ink-2:#3a3a3a;
+  --ink-3:#7a7a7a;
+  --ink-4:#a8a8a8;
+  --ink-5:#c8c8c8;
+  
+  /* 보더 — 얇은 회색 */
+  --line:#e6e6e6;
+  --line-2:#dadada;
+  --line-mid:#c8c8c8;
+  
+  /* 스틸 그라디언트 (위→아래) */
+  --steel-light-top:#ffffff;
+  --steel-light-bot:#ededed;
+  --steel-hover-top:#f7f7f7;
+  --steel-hover-bot:#dfdfdf;
+  --steel-press-top:#6a6a6a;
+  --steel-press-bot:#2a2a2a;
+  --steel-active-top:#8a8a8a;
+  --steel-active-bot:#383838;
+  
+  /* 메탈 */
+  --metal-1:#fafafa;
+  --metal-2:#e0e0e0;
+  --metal-3:#b8b8b8;
+  --metal-4:#888888;
+  --metal-5:#3a3a3a;
+  
+  /* 소프트 그림자 (시안 기반) */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.05);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 4px 10px rgba(0,0,0,0.04);
+  --shadow-btn: 0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(255,255,255,0.5) inset;
+  --shadow-btn-press: 0 1px 2px rgba(0,0,0,0.15), 0 -1px 1px rgba(255,255,255,0.1) inset, 0 1px 2px rgba(0,0,0,0.3) inset;
+  
+  /* 라운드 */
+  --r-sm:6px;
+  --r:10px;
+  --r-lg:14px;
+  --r-xl:18px;
+  --r-pill:999px;
+  
+  /* 호환 변수 — 기존 코드 색 매핑 (검정 대신 다크 그레이) */
+  --red:#3a3a3a;
+  --red-dark:#2a2a2a;
+  --red-soft:#f0f0f0;
+  --acid:#e8e8e8;
+  --purple-1:#3a3a3a;
+  --purple-2:#6a6a6a;
+  --purple-3:#a8a8a8;
+  --purple-4:#f0f0f0;
+  --purple-deep:#2a2a2a;
+  --pink:#3a3a3a;
+  --shadow-off:var(--shadow-md);
+  --shadow-off-sm:var(--shadow-sm);
+  --shadow-off-hover:var(--shadow-lg);
+}
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Pretendard Variable','Pretendard',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  font-weight:500;
+  font-size:14px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{display:none;}
+
+/* 좌측 패널 */
+.panel{
+  background:#fff;
+  border-right:1px solid var(--line);
+}
+.panel::-webkit-scrollbar{width:6px;}
+.panel::-webkit-scrollbar-thumb{background:var(--line-mid);border-radius:3px;}
+
+/* 헤더 */
+.brand-mini{
+  padding:24px 22px 20px;
+  border-bottom:1px solid var(--line);
+  background:#fff;
+}
+.brand-mini .logo-box{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:38px;
+  background:linear-gradient(180deg,#4a4a4a 0%,#2a2a2a 100%);
+  color:#fff;
+  border-radius:var(--r-sm);
+  font-size:20px;font-weight:900;
+  margin-right:12px;
+  box-shadow:var(--shadow-sm), 0 1px 1px rgba(255,255,255,0.15) inset;
+  vertical-align:middle;
+}
+.brand-mini .brand-name{
+  font-family:'Pretendard Variable',sans-serif;
+  font-weight:900;
+  font-size:26px;letter-spacing:-1px;
+  color:var(--ink);
+  background:none;
+  -webkit-text-fill-color:initial;
+  display:inline-block;vertical-align:middle;line-height:1;
+}
+.brand-mini .brand-sub{
+  display:block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:2px;
+  color:var(--ink-3);font-weight:600;
+  margin-top:8px;text-transform:uppercase;
+}
+
+/* 섹션 카드 */
+.section{
+  margin:14px 16px;
+  padding:18px 18px 16px;
+  background:#fff;
+  border:1px solid var(--line);
+  box-shadow:var(--shadow-sm);
+  border-radius:var(--r-lg);
+  transition:box-shadow .15s;
+}
+.section:hover{
+  box-shadow:var(--shadow-md);
+}
+.section-head{margin-bottom:14px;display:flex;align-items:center;}
+
+.section-title{
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:16px;letter-spacing:-0.5px;
+  color:var(--ink);font-weight:800;
+  line-height:1.2;
+}
+.section-title span{
+  font-family:'JetBrains Mono',monospace !important;
+  font-weight:600 !important;
+  font-size:10px !important;
+  color:var(--ink-3) !important;
+  letter-spacing:1.5px !important;
+  margin-left:8px !important;
+  vertical-align:middle;
+  text-transform:uppercase;
+}
+
+.section-badge{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:700;
+  padding:4px 10px;
+  background:var(--paper-2);
+  color:var(--ink-2);
+  border:none;
+  border-radius:var(--r-pill);
+  letter-spacing:0.3px;
+  margin-left:auto;
+}
+
+.api-section{ background:#fff; }
+.api-section.warn{ background:#fff; }
+.api-section.ok{ background:#fff; }
+.api-section .section-title{font-size:15px;}
+
+/* 입력창 */
+.prompt-input, input[type="text"], input[type="password"], textarea{
+  background:#fff;
+  border:1px solid var(--line-2);
+  border-radius:var(--r);
+  padding:11px 14px;
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:14px;font-weight:500;
+  color:var(--ink);
+  transition:border-color .15s, box-shadow .15s;
+  width:100%;
+}
+.prompt-input::placeholder, input::placeholder, textarea::placeholder{
+  color:var(--ink-4);font-weight:500;
+}
+.prompt-input:focus, input:focus, textarea:focus{
+  outline:none;
+  border-color:var(--ink-2);
+  box-shadow:0 0 0 3px rgba(60,60,60,0.06);
+}
+
+/* ────────────────────────────────────────────────────
+   ★ 핵심: 모든 칩·버튼이 스틸 메탈 그라디언트 ★
+   ──────────────────────────────────────────────────── */
+
+/* 기본 칩 (count-chip / tip-chip) */
+.count-chip, .tip-chip{
+  border:1px solid var(--line-2) !important;
+  border-radius:var(--r-pill) !important;
+  background:linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%) !important;
+  color:var(--ink-2);
+  font-weight:700;
+  font-size:13px !important;
+  font-family:'Pretendard Variable',sans-serif;
+  letter-spacing:-0.2px;
+  padding:8px 14px !important;
+  transition:all .12s;
+  box-shadow:var(--shadow-btn);
+}
+.count-chip:hover, .tip-chip:hover{
+  background:linear-gradient(180deg, #fafafa 0%, #e2e2e2 100%) !important;
+  border-color:var(--line-mid) !important;
+  box-shadow:0 2px 4px rgba(0,0,0,0.06), 0 1px 1px rgba(255,255,255,0.5) inset;
+}
+.count-chip:active, .tip-chip:active{
+  background:linear-gradient(180deg, #d8d8d8 0%, #e8e8e8 100%) !important;
+  box-shadow:var(--shadow-btn-press);
+}
+.count-chip.active{
+  background:linear-gradient(180deg, #6a6a6a 0%, #2a2a2a 100%) !important;
+  color:#fff !important;
+  border-color:var(--ink) !important;
+  box-shadow:var(--shadow-sm), 0 1px 1px rgba(255,255,255,0.15) inset;
+  text-shadow:0 1px 1px rgba(0,0,0,0.3);
+}
+.count-chip small, .tip-chip small{
+  font-family:'JetBrains Mono',monospace !important;
+  font-size:9px !important;
+  letter-spacing:0 !important;
+  font-weight:500 !important;
+}
+
+/* layout 칩 — 큰 카드 + 선택 시 우상단 삼각형 */
+#layoutRow{display:flex;flex-direction:column;gap:8px;}
+#layoutRow .count-chip{
+  border:1px solid var(--line) !important;
+  border-radius:var(--r) !important;
+  padding:14px 16px !important;
+  text-align:left;
+  display:flex;align-items:center;gap:12px;
+  font-size:15px !important;font-weight:800;
+  background:linear-gradient(180deg, #ffffff 0%, #ededed 100%) !important;
+  position:relative;
+  overflow:hidden;
+}
+#layoutRow .count-chip::before{
+  content:'';display:inline-block;
+  width:24px;height:24px;
+  background:linear-gradient(180deg, #f8f8f8 0%, #e0e0e0 100%);
+  border:1px solid var(--line-2);
+  border-radius:6px;flex-shrink:0;
+}
+#layoutRow .count-chip.active{
+  background:linear-gradient(180deg, #5a5a5a 0%, #2a2a2a 100%) !important;
+  color:#fff !important;
+  border-color:var(--ink) !important;
+}
+#layoutRow .count-chip.active::before{
+  background:linear-gradient(180deg, #ffffff 0%, #d0d0d0 100%);
+  border-color:rgba(255,255,255,0.3);
+}
+#layoutRow .count-chip.active::after{
+  content:'';
+  position:absolute;
+  top:0;right:0;
+  width:0;height:0;
+  border-style:solid;
+  border-width:0 28px 28px 0;
+  border-color:transparent #0a0a0a transparent transparent;
+}
+#layoutRow .count-chip small{
+  display:block !important;
+  margin-top:3px !important;
+  color:var(--ink-3) !important;
+  font-weight:500 !important;
+  font-family:'Pretendard Variable',sans-serif !important;
+  font-size:11px !important;
+}
+#layoutRow .count-chip.active small{color:rgba(255,255,255,0.7) !important;}
+
+/* 빠른 키워드 칩 */
+.tip-chip{
+  background:linear-gradient(180deg, #f7f7f7 0%, #ebebeb 100%) !important;
+  padding:5px 11px !important;
+  font-size:12px !important;
+  color:var(--ink-2);
+  border:1px solid var(--line-2) !important;
+  font-weight:600;
+  box-shadow:none;
+}
+.tip-chip:hover{
+  background:linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%) !important;
+  color:#fff;
+  border-color:var(--ink-2) !important;
+  text-shadow:0 1px 1px rgba(0,0,0,0.3);
+}
+
+/* 드롭존 */
+.dropzone{
+  border:1.5px dashed var(--line-mid) !important;
+  background:linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+  border-radius:var(--r);
+  padding:18px 14px !important;
+  transition:all .15s;
+}
+.dropzone-text{
+  font-family:'Pretendard Variable',sans-serif !important;
+  font-size:13px !important;color:var(--ink-3);
+}
+.dropzone-text strong{
+  font-size:14px !important;color:var(--ink-2);font-weight:700;
+}
+.dropzone:hover, .dropzone.drag, .dropzone.active-paste{
+  background:linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%);
+  border-color:var(--ink-2) !important;
+  border-style:solid !important;
+}
+
+/* 참고 이미지 썸네일 */
+.ref-thumb{
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  box-shadow:var(--shadow-sm);
+  overflow:hidden;
+}
+.ref-thumb .ref-del{
+  background:rgba(42,42,42,0.85);color:#fff;
+  border:none;
+  border-radius:50%;
+  font-weight:700;
+  width:22px;height:22px;
+  font-size:14px;
+}
+
+/* ★ Primary 생성 버튼 — 큰 스틸 그라디언트 ★ */
+.generate-btn{
+  width:calc(100% - 32px);
+  margin:0 16px;
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:17px;letter-spacing:-0.3px;font-weight:800;
+  padding:16px 20px !important;
+  background:linear-gradient(180deg, #6a6a6a 0%, #2a2a2a 100%) !important;
+  color:#fff !important;
+  border:1px solid var(--ink) !important;
+  border-radius:var(--r) !important;
+  box-shadow:var(--shadow-md), 0 1px 1px rgba(255,255,255,0.15) inset;
+  transition:all .15s;
+  text-shadow:0 1px 1px rgba(0,0,0,0.3);
+}
+.generate-btn:hover:not(:disabled){
+  background:linear-gradient(180deg, #7a7a7a 0%, #3a3a3a 100%) !important;
+  box-shadow:var(--shadow-lg), 0 1px 1px rgba(255,255,255,0.18) inset;
+  transform:translateY(-1px);
+}
+.generate-btn:active:not(:disabled){
+  background:linear-gradient(180deg, #2a2a2a 0%, #4a4a4a 100%) !important;
+  transform:translateY(0);
+  box-shadow:var(--shadow-btn-press);
+}
+.generate-btn:disabled{
+  background:linear-gradient(180deg, #f0f0f0 0%, #e0e0e0 100%) !important;
+  color:var(--ink-4) !important;
+  box-shadow:var(--shadow-sm);
+  text-shadow:none;
+  border-color:var(--line-2) !important;
+}
+
+/* 결과 카드 */
+.result-card{
+  background:#fff;
+  border:1px solid var(--line) !important;
+  border-radius:var(--r-lg) !important;
+  box-shadow:var(--shadow-card);
+  transition:all .2s;
+  overflow:hidden;
+  position:relative;
+}
+.result-card:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--shadow-lg);
+}
+.result-tag{
+  border:1px solid var(--line) !important;
+  background:linear-gradient(180deg, #ffffff 0%, #f3f3f3 100%);
+  font-family:'Pretendard Variable',sans-serif;
+  font-weight:600;
+  font-size:11px;
+  border-radius:var(--r-pill);
+  padding:3px 9px;
+  color:var(--ink-2);
+}
+.result-tag.red{
+  background:linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+  color:#fff;border-color:var(--ink) !important;
+}
+.result-num{
+  background:linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+  color:#fff;
+  border:1px solid var(--ink);
+  border-radius:var(--r-pill);
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  font-weight:700;
+  padding:3px 9px;
+  letter-spacing:0.5px;
+  text-shadow:0 1px 1px rgba(0,0,0,0.3);
+}
+
+/* 카드 액션 버튼 — 메탈 알약 */
+.result-btn{
+  border:1px solid var(--line-2) !important;
+  border-radius:var(--r-pill) !important;
+  font-weight:700;
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:12px !important;
+  letter-spacing:-0.2px;
+  padding:7px 12px !important;
+  background:linear-gradient(180deg, #ffffff 0%, #ededed 100%);
+  color:var(--ink-2);
+  box-shadow:var(--shadow-sm), 0 1px 1px rgba(255,255,255,0.5) inset;
+  transition:all .12s;
+}
+.result-btn.primary{
+  background:linear-gradient(180deg, #5a5a5a 0%, #2a2a2a 100%) !important;
+  color:#fff !important;border-color:var(--ink) !important;
+  text-shadow:0 1px 1px rgba(0,0,0,0.3);
+}
+.result-btn.primary:hover{
+  background:linear-gradient(180deg, #6a6a6a 0%, #3a3a3a 100%) !important;
+  box-shadow:var(--shadow-md), 0 1px 1px rgba(255,255,255,0.15) inset;
+}
+.result-btn:hover{
+  background:linear-gradient(180deg, #fafafa 0%, #e0e0e0 100%);
+  border-color:var(--line-mid) !important;
+}
+.result-btn:active{
+  background:linear-gradient(180deg, #d8d8d8 0%, #e8e8e8 100%);
+  box-shadow:var(--shadow-btn-press);
+}
+
+/* Heavy 토글 */
+#heavyToggle{
+  border:1px solid var(--line) !important;
+  border-radius:var(--r) !important;
+  background:linear-gradient(180deg, #ffffff 0%, #f7f7f7 100%) !important;
+  box-shadow:var(--shadow-sm);
+  padding:14px 16px !important;
+}
+#heavyToggle:hover{
+  border-color:var(--line-mid) !important;
+  background:linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%) !important;
+  box-shadow:var(--shadow-md);
+}
+#heavyToggleSwitch{
+  border:none !important;
+  border-radius:var(--r-pill) !important;
+  background:var(--line-2) !important;
+  width:40px !important;height:22px !important;
+  transition:background .2s;
+}
+#heavyToggleKnob{
+  background:linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%) !important;
+  border-radius:50% !important;
+  width:18px !important;height:18px !important;
+  box-shadow:var(--shadow-sm);
+  top:2px !important;
+}
+#heavyToggle div div:first-child{
+  font-family:'Pretendard Variable',sans-serif !important;
+  font-size:14px !important;
+  font-weight:800;
+  letter-spacing:-0.3px !important;
+  color:var(--ink) !important;
+}
+#heavyToggle div div:last-child{
+  font-size:11px !important;
+  color:var(--ink-3) !important;
+  font-family:'Pretendard Variable',sans-serif !important;
+  font-weight:500;
+}
+
+/* Empty state */
+.empty-state{ background:transparent; position:relative; overflow:hidden; }
+.empty-title{
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:64px !important;
+  letter-spacing:-3px;
+  font-weight:900;
+  line-height:0.95;
+  color:var(--ink);
+  background:none;
+  -webkit-text-fill-color:initial;
+  position:relative;z-index:3;
+}
+.empty-title::before{
+  content:'';display:block;
+  width:60px;height:4px;
+  background:linear-gradient(90deg, #6a6a6a, #2a2a2a);
+  margin:0 auto 24px;
+  border-radius:var(--r-pill);
+}
+.empty-desc{
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:13px !important;
+  color:var(--ink-3);
+  letter-spacing:-0.2px;
+  margin-top:16px;
+  font-weight:500;
+  position:relative;z-index:3;
+}
+
+/* Chrome Blob — 실버 톤 유지 */
+.chrome-blob{
+  position:absolute;
+  width:480px;height:480px;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  z-index:1;
+  filter:blur(0.5px);
+  opacity:0.7;
+  pointer-events:none;
+  animation:blob-float 14s ease-in-out infinite;
+}
+@keyframes blob-float{
+  0%,100%{transform:translate(-50%,-50%) rotate(0deg) scale(1);}
+  25%{transform:translate(-48%,-52%) rotate(2deg) scale(1.04);}
+  50%{transform:translate(-52%,-48%) rotate(-2deg) scale(0.98);}
+  75%{transform:translate(-50%,-50%) rotate(1deg) scale(1.02);}
+}
+body.generating .chrome-blob{
+  animation:blob-pulse 1.1s ease-in-out infinite;
+  filter:blur(1px) contrast(1.1);
+  opacity:0.85;
+}
+@keyframes blob-pulse{
+  0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);}
+  50%{transform:translate(-50%,-50%) scale(1.08) rotate(3deg);}
+}
+body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85; }
+
+/* 카운터 — 스틸 알약 */
+.counter{
+  font-family:'Pretendard Variable',sans-serif;
+  background:linear-gradient(180deg, #4a4a4a 0%, #2a2a2a 100%);
+  color:#fff;
+  border:1px solid var(--ink);
+  border-radius:var(--r-pill);
+  font-weight:700;
+  font-size:12px;
+  padding:8px 16px;
+  box-shadow:var(--shadow-sm), 0 1px 1px rgba(255,255,255,0.15) inset;
+  text-shadow:0 1px 1px rgba(0,0,0,0.3);
+}
+.clear-all-btn{
+  border:1px solid var(--line-2) !important;
+  border-radius:var(--r-pill) !important;
+  font-weight:600;
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:12px;
+  background:linear-gradient(180deg, #ffffff 0%, #ededed 100%);
+  color:var(--ink-2);
+  padding:7px 14px !important;
+  box-shadow:var(--shadow-sm);
+}
+.clear-all-btn:hover{
+  background:linear-gradient(180deg, #fafafa 0%, #e0e0e0 100%);
+  border-color:var(--line-mid) !important;
+}
+
+/* 토스트 — 다크 스틸 */
+.toast{
+  background:linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%) !important;
+  color:#fff !important;
+  border:1px solid var(--ink);
+  border-radius:var(--r) !important;
+  box-shadow:var(--shadow-lg);
+  font-family:'Pretendard Variable',sans-serif;
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:-0.2px;
+  padding:12px 18px !important;
+  text-shadow:0 1px 1px rgba(0,0,0,0.3);
+}
+
+/* 모달 */
+.modal-bg{ background:rgba(42,42,42,0.5) !important; }
+.modal-bg .modal{
+  background:#fff !important;
+  border:1px solid var(--line) !important;
+  border-radius:var(--r-xl) !important;
+  box-shadow:var(--shadow-lg) !important;
+}
+.modal-bg .modal-head{
+  border-bottom:1px solid var(--line);
+  padding:16px 20px !important;
+}
+.modal-bg .modal-title{
+  font-family:'Pretendard Variable',sans-serif;
+  font-weight:800;font-size:16px;
+  letter-spacing:-0.3px;
+  color:var(--ink);
+}
+.modal-bg .modal-close{
+  font-size:24px;font-weight:300;
+  color:var(--ink-3);
+  cursor:pointer;
+}
+.modal-bg .modal-close:hover{ color:var(--ink); }
+.modal-bg .modal-body{ padding:20px !important; }
+.modal-section h4{
+  font-family:'Pretendard Variable',sans-serif;
+  font-size:15px !important;
+  letter-spacing:-0.3px;
+  font-weight:800;
+  color:var(--ink);
+}
+.modal-section pre{
+  background:var(--paper-2);
+  border:1px solid var(--line) !important;
+  border-radius:var(--r);
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  border-left:3px solid var(--ink-2) !important;
+  padding:12px 14px;
+}
+
+/* 라이트박스 */
+.lightbox-img{
+  border:none;
+  border-radius:var(--r-lg);
+  box-shadow:var(--shadow-lg);
+}
+
+/* 접기 화살표 */
+.section.is-collapsible > .section-head .section-title::before{
+  color:var(--ink-3);
+  font-weight:700;
+  font-size:11px !important;
+  margin-right:6px;
+}
+.section.is-collapsible > .section-head:hover{ color:var(--ink-3); }
+.section.is-collapsible > .section-head{ cursor:pointer; }
+
+/* 12원칙 */
+.principles{
+  background:linear-gradient(180deg, #f5f5f5 0%, #ececec 100%);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--shadow-sm);
+  margin:14px 16px;
+  padding:14px 16px !important;
+}
+.principles-title{
+  font-family:'Pretendard Variable',sans-serif !important;
+  font-size:14px !important;
+  font-weight:800;
+  color:var(--ink);
+}
+
+#layoutSection{ background:#fff !important; }
+
+.mini-spin{
+  border-color:var(--ink) !important;
+  border-top-color:transparent !important;
+}
+
+/* 시험지 정보 박스 */
+#examInfoBox{
+  background:linear-gradient(180deg, #f8f8f8 0%, #f0f0f0 100%) !important;
+  border:1px solid var(--line) !important;
+  border-radius:var(--r) !important;
+  box-shadow:var(--shadow-sm);
+}
+#examInfoBox strong{
+  font-family:'Pretendard Variable',sans-serif !important;
+  font-size:13px !important;
+  color:var(--ink) !important;
+  font-weight:800;
+}
+
+/* 결과 영역 카드 그리드 */
+.results-grid, #results{ gap:20px !important; }
+.result-card .result-body{padding:14px 16px !important;}
+.result-card .result-img-wrap{border-radius:var(--r-lg) var(--r-lg) 0 0;}
+
+.results-header{padding:18px 24px !important;border-bottom:1px solid var(--line);}
+.results-header h2, .results-title{
+  font-family:'Pretendard Variable',sans-serif;
+  font-weight:900;font-size:22px;
+  letter-spacing:-0.5px;
+  color:var(--ink);
+}
+
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ 좌측 패널 ============ -->
+  <aside class="panel">
+    <!-- 헤더 (브랜드) -->
+    <div class="brand-mini">
+      <span class="logo-box">▒</span>
+      <span class="brand-name">DRAWLAB</span>
+      <span class="brand-sub">SHAPE / FLOW / MAKE</span>
+    </div>
+
+    <!-- 공간 구성 (전체 / 주제부 중심) -->
+    <div class="section" id="layoutSection" style="background:linear-gradient(135deg,#fff 0%,var(--red-soft) 100%);">
+      <div class="section-head">
+        <div class="section-title">공간 구성 <span>LAYOUT</span></div>
+      </div>
+      <div class="count-row" id="layoutRow">
+        <div class="count-chip active" data-layout="full" onclick="setLayout('full')">🖼 전체 구성<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">화면 가득 · 근중원경</small></div>
+        <div class="count-chip" data-layout="focal" onclick="setLayout('focal')">◎ 주제부 중심<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">개체 표현 · 관계성</small></div>
+        <div class="count-chip" data-layout="research" onclick="setLayout('research')">📚 소재 자료<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">대표 + 각도 8개 (과투시 2컷)</small></div>
+      </div>
+      
+      <!-- 비율 (LAYOUT 안에 통합 — 처음부터 보이게) -->
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
+        <div style="font-size:11px;color:var(--ink-3);margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">비율 <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;opacity:.6;margin-left:4px;">RATIO</span></div>
+        <div class="count-row" id="ratioRow" style="display:flex;gap:6px;">
+          <div class="count-chip active" data-ratio="landscape" style="flex:1;text-align:center;">▭ 가로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">4:3</small></div>
+          <div class="count-chip" data-ratio="portrait" style="flex:1;text-align:center;">▯ 세로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">3:4</small></div>
+          <div class="count-chip" data-ratio="square" style="flex:1;text-align:center;">□ 정사각<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">1:1</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- API 키 (최상단 고정) -->
+    <div class="section api-section is-collapsible" id="apiSection">
+      <div class="section-head" onclick="toggleSection(this, event)">
+        <div class="section-title">
+          <span id="apiTitle">⚠ API KEY 필요</span>
+        </div>
+        <span class="section-badge" id="apiToggleShow" onclick="event.stopPropagation();toggleKeyView();" style="cursor:pointer;">👁 보기</span>
+      </div>
+      <div class="api-row">
+        <input type="password" id="apiKey" class="api-input" placeholder="sk-... 로 시작하는 키">
+        <button class="api-save" onclick="saveKey()">저장</button>
+      </div>
+      <div class="api-status" id="apiStatus">키를 입력하고 저장 버튼을 눌러주세요</div>
+    </div>
+
+    <!-- 10원칙 (기초디자인 탭에만) -->
+    <div class="principles" id="principlesBox" onclick="togglePrinciples()">
+      <div class="principles-head">
+        <span><em>기디 완성작</em> 12원칙 + 소재분석 자동</span>
+        <span class="principles-arrow">▶</span>
+      </div>
+      <div class="principles-body">
+        <ol>
+          <li><b>강한 사선 구도</b></li>
+          <li><b>근경/중경/원경</b> 3단 분리</li>
+          <li>주제부 중경 강배치 <b>(겹쳐서 왜곡)</b></li>
+          <li><b>각 사물 전체형이 한 번은 보임</b> (근경 확대는 보조)</li>
+          <li>원경은 <b>작고 약하게</b> 반복</li>
+          <li><b>공기원근법</b> 강하게 (뒤로 ↓)</li>
+          <li><b>5점 투시</b> 적용</li>
+          <li>화이트 배경 + <b>바닥 없음</b></li>
+          <li>재질 대비 + <b>투명체의 굴절·왜곡</b></li>
+          <li><b>하이라이트·물방울·액체 튐</b></li>
+          <li>사물 고유 <b>리듬감</b> (반복·원형·직선)</li>
+          <li style="color:var(--red);font-weight:700;"><b>제시된 사물만 사용</b> (추가 ✗)</li>
+        </ol>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:9px;color:#1e7e34;font-weight:700;">
+          ✓ 매 생성마다 디렉터 시각의 소재 분석을 먼저 진행해 구성안을 만든 후 이미지 생성 (2단계 워크플로우)
+        </div>
+      </div>
+    </div>
+
+    <!-- 스크롤 영역 -->
+    <div class="scroll">
+      <!-- 제시어 (메인/보조 분리 — 입시 유형 대응) -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title" id="promptLabel">제시어 <span>PROMPT</span></div>
+          <span class="section-badge" id="charCount">0자</span>
+        </div>
+        
+        <!-- 시험지 정보 표시 영역 (분석 후에만 보임) -->
+        <div id="examInfoBox" style="display:none;margin-bottom:10px;padding:8px 10px;background:#fff3f1;border:1px solid #c0392b;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <strong style="color:#c0392b;letter-spacing:0.3px;">📋 시험지 정보 적용됨</strong>
+            <span style="cursor:pointer;color:var(--ink-3);font-weight:700;" onclick="clearExamInfo()" title="시험지 정보 초기화">×</span>
+          </div>
+          <div id="examInfoSummary" style="color:var(--ink-1);"></div>
+        </div>
+        
+        <div style="font-size:10px;color:var(--ink-3);margin-bottom:4px;font-weight:700;letter-spacing:0.3px;">🎯 메인 소재 <span style="font-weight:400;opacity:.6;">(필수 · 화면 40% 이상 · 전체형)</span></div>
+        <textarea id="promptText" class="prompt-input" rows="2" placeholder="예: 요요와 실 / 타자기 / 가스 버너"></textarea>
+        
+        <div style="font-size:10px;color:var(--ink-3);margin:10px 0 4px;font-weight:700;letter-spacing:0.3px;">🧰 보조 소재 <span style="font-weight:400;opacity:.6;">(옵션 · 콤마 구분 · 모두 등장)</span></div>
+        <textarea id="supportSubjectsText" class="prompt-input" rows="2" placeholder="예: 철사, 정육면체, 체인, 스프링, 톱니, 프로펠러, U볼트, 쇠구슬"></textarea>
+        
+        <div class="prompt-tip" id="tipChips"></div>
+      </div>
+
+      <!-- 참고 이미지 + AI 분석 -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">참고 이미지 <span>REFERENCE</span></div>
+          <span class="section-badge" id="refCount">0/3</span>
+        </div>
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('refUpload').click()">
+          <div class="dropzone-text">
+            <strong>＋ 사진 추가 / 드래그 / 붙여넣기</strong>
+            최대 3장 · Ctrl+V로 캡처 이미지 바로 붙여넣기 가능
+          </div>
+          <input type="file" id="refUpload" accept="image/*" multiple style="display:none;">
+        </div>
+        <div class="refs" id="refsGrid"></div>
+        <!-- 분석 모드 토글 (소재만 / 시험지 전체) -->
+        <div style="display:flex;gap:5px;margin-top:8px;margin-bottom:6px;">
+          <div class="count-chip active" id="analyzeModeSubject" data-analyze-mode="subject" style="flex:1;padding:6px 8px;font-size:10px;cursor:pointer;text-align:center;" onclick="setAnalyzeMode('subject')">
+            ✨ 소재<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">메인만 추출</small>
+          </div>
+          <div class="count-chip" id="analyzeModeExam" data-analyze-mode="exam" style="flex:1;padding:6px 8px;font-size:10px;cursor:pointer;text-align:center;" onclick="setAnalyzeMode('exam')">
+            🎯 시험지<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">대학·문제·소재 전체</small>
+          </div>
+        </div>
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyzeImages()" disabled>
+          <span class="ico">✦</span>
+          <span id="analyzeBtnText">사진 분석 → 제시어 자동 생성</span>
+        </button>
+      </div>
+
+
+      <!-- 🎨 스타일 참고 (research 모드에서 숨김 · 최대 10장 · 라이브러리 저장) -->
+      <div class="section is-collapsible is-collapsed" id="styleSection">
+        <div class="section-head" onclick="toggleSection(this, event)">
+          <div class="section-title">스타일 참고 <span>STYLE DNA</span></div>
+          <span class="section-badge" id="styleRefCount">0/10</span>
+        </div>
+        <div style="font-size:10px;color:var(--ink-3);margin-bottom:6px;line-height:1.4;">
+          참고할 그림 스타일 이미지 (채색·터치·화풍). 라이브러리에 자동 저장돼서 다시 쓸 수 있어요.
+        </div>
+        <div class="dropzone" id="styleDropzone" onclick="document.getElementById('styleRefUpload').click()">
+          <div class="dropzone-text">
+            <strong>＋ 스타일 참고 사진</strong>
+            드래그 / 붙여넣기 (최대 10장)
+          </div>
+          <input type="file" id="styleRefUpload" accept="image/*" multiple style="display:none;">
+        </div>
+        <div class="refs" id="styleRefsGrid"></div>
+        <button class="result-btn" style="width:100%;margin-top:8px;padding:8px;font-size:11px;" onclick="openStyleLibrary()">
+          📚 스타일 라이브러리 열기
+        </button>
+      </div>
+
+      <!-- 주제부 연출 - 톤(정적/동적) 선택 (주제부 연출 탭에만) -->
+      <div class="section" id="toneSection" style="display:none;">
+        <div class="section-head">
+          <div class="section-title">연출 흐름 <span>FLOW</span></div>
+        </div>
+        <div class="count-row" id="toneRow">
+          <div class="count-chip active" data-tone="dynamic">⚡ 동적<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">움직임·흐름</small></div>
+          <div class="count-chip" data-tone="static">◇ 정적<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">균형·안정</small></div>
+        </div>
+        <div style="font-size:9px;color:var(--ink-3);margin-top:6px;font-family:'JetBrains Mono',monospace;line-height:1.4;">
+          동적 = 열리고 빠져나오고 휘어지는 순간<br>
+          정적 = 차분한 균형, 안정적 배치
+        </div>
+      </div>
+
+      <!-- 구도 (기초디자인 탭에만) -->
+      <div class="section is-collapsible is-collapsed" id="compositionSection">
+        <div class="section-head" onclick="toggleSection(this, event)">
+          <div class="section-title">구도 <span>COMPOSITION</span></div>
+          <span class="section-badge">미지정=자동</span>
+        </div>
+        <input type="text" id="compositionText" class="prompt-input" placeholder="예: 방사형 구도, S자 흐름, 삼각형..." style="padding:8px 10px;font-size:12px;">
+        <div class="prompt-tip" id="compChips">
+          <span class="tip-chip" data-comp="강한 사선 구도">사선</span>
+          <span class="tip-chip" data-comp="대각선 X자 구도">대각선X</span>
+          <span class="tip-chip" data-comp="방사형(라디얼) 구도 - 중심에서 사방으로 뻗어나가는 흐름">방사형</span>
+          <span class="tip-chip" data-comp="삼각형 안정 구도">삼각형</span>
+          <span class="tip-chip" data-comp="역삼각형 구도 - 위가 무겁고 아래로 좁아짐">역삼각형</span>
+          <span class="tip-chip" data-comp="S자 곡선 구도 - 부드러운 흐름">S자</span>
+          <span class="tip-chip" data-comp="원형 구도 - 화면 중심을 둘러싸는 순환 흐름">원형</span>
+          <span class="tip-chip" data-comp="중앙집중형 구도 - 가운데로 시선이 모이는 구성">중앙집중</span>
+        </div>
+        
+        <!-- 구도 참고 이미지 -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="font-size:10px;color:var(--ink-3);font-weight:700;letter-spacing:0.3px;">구도 참고 이미지 <span style="font-weight:400;opacity:.7;">(분석에 활용)</span></div>
+            <span class="section-badge" id="compRefCount">0/2</span>
+          </div>
+          <div class="dropzone" id="compDropzone" onclick="document.getElementById('compRefUpload').click()">
+            <div class="dropzone-text">
+              <strong>＋ 구도 참고 사진</strong>
+              드래그 / 붙여넣기 (최대 2장)
+            </div>
+            <input type="file" id="compRefUpload" accept="image/*" multiple style="display:none;">
+          </div>
+          <div class="refs" id="compRefsGrid"></div>
+        </div>
+        
+        <div style="font-size:9px;color:var(--ink-3);margin-top:6px;font-family:'JetBrains Mono',monospace;">비워두면 강사 분석이 소재에 맞춰 자동 추천</div>
+      </div>
+
+      <!-- 통제 옵션 (research 모드에서 숨김) -->
+      <div class="section is-collapsible is-collapsed" id="controlSection">
+        <div class="section-head" onclick="toggleSection(this, event)">
+          <div class="section-title">통제 옵션 <span>CONTROLS</span></div>
+          <span class="section-badge">시범작/30%/약</span>
+        </div>
+        
+        <div style="font-size:10px;color:var(--ink-3);margin-bottom:5px;font-weight:700;letter-spacing:0.3px;">결과물 성격</div>
+        <div class="count-row" id="intentRow">
+          <div class="count-chip" data-intent="balsang">💡 발상용<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">아이디어</small></div>
+          <div class="count-chip active" data-intent="sibumjak">✦ 시범작<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">완성작</small></div>
+          <div class="count-chip" data-intent="seolmyeong">📐 설명용<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">구조 설명</small></div>
+        </div>
+        
+        <div style="font-size:10px;color:var(--ink-3);margin:10px 0 5px;font-weight:700;letter-spacing:0.3px;">여백</div>
+        <div class="count-row" id="whitespaceRow">
+          <div class="count-chip" data-ws="less">적게<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">20%</small></div>
+          <div class="count-chip active" data-ws="normal">보통<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">30%</small></div>
+          <div class="count-chip" data-ws="more">많이<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">40%</small></div>
+        </div>
+        
+        <div style="font-size:10px;color:var(--ink-3);margin:10px 0 5px;font-weight:700;letter-spacing:0.3px;">물줄기·선형 효과</div>
+        <div class="count-row" id="effectsRow">
+          <div class="count-chip" data-fx="none">없음<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">소재만</small></div>
+          <div class="count-chip active" data-fx="low">약<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">최소</small></div>
+          <div class="count-chip" data-fx="high">강<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">통제된 범위</small></div>
+        </div>
+        
+        <div style="font-size:9px;color:var(--ink-3);margin-top:6px;font-family:'JetBrains Mono',monospace;line-height:1.4;">
+          시범작 기본 · 학생 설명용은 효과 줄이기 권장
+        </div>
+      </div>
+
+      <!-- 수량 + 품질 -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">생성 옵션 <span>OUTPUT</span></div>
+        </div>
+        <div style="font-size:10px;color:var(--ink-3);margin-bottom:5px;font-weight:700;letter-spacing:0.3px;">수량</div>
+        <div class="count-row" id="countRow">
+          <div class="count-chip" data-count="1">1장</div>
+          <div class="count-chip active" data-count="2">2장</div>
+          <div class="count-chip" data-count="4">4장</div>
+        </div>
+        <div style="font-size:10px;color:var(--ink-3);margin:10px 0 5px;font-weight:700;letter-spacing:0.3px;">품질</div>
+        <div class="count-row" id="qualityRow">
+          <div class="count-chip" data-quality="low">⚡ 빠름<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">초안용</small></div>
+          <div class="count-chip active" data-quality="medium">🎨 균형<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">추천</small></div>
+          <div class="count-chip" data-quality="high">✨ 고품질<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">시범작</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💾 현재 작업 비우기 (세션 초기화) -->
+    <div style="margin:0 16px 8px;text-align:right;">
+      <a href="javascript:void(0)" onclick="clearCurrentSession()" 
+         style="font-size:10px;color:var(--ink-3);text-decoration:underline;cursor:pointer;font-family:'JetBrains Mono',monospace;"
+         title="첨부 이미지·시험지 정보·입력값을 모두 초기화">
+        🗑 현재 작업 비우기
+      </a>
+    </div>
+
+    <!-- Heavy 디렉팅 모드 토글 (research 모드에서 숨김) -->
+    <div id="heavyToggle" style="margin:0 16px 10px;padding:10px 12px;border:1px solid var(--ink-3);background:var(--paper-2);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:all 0.15s;" onclick="toggleHeavyMode()">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--ink-1);">🎬 디렉터 모드</div>
+        <div style="font-size:9px;color:var(--ink-3);margin-top:2px;line-height:1.3;font-family:'JetBrains Mono',monospace;">분석→후보 3안→평가→최종 압축 · 약 30~60초</div>
+      </div>
+      <div id="heavyToggleSwitch" style="width:36px;height:20px;border:1px solid var(--ink-1);background:var(--paper-1);position:relative;flex-shrink:0;">
+        <div id="heavyToggleKnob" style="position:absolute;top:1px;left:1px;width:16px;height:16px;background:var(--ink-1);transition:all 0.15s;"></div>
+      </div>
+    </div>
+
+    <!-- 생성 버튼 -->
+    <div class="actions">
+      <button class="generate-btn" id="genBtn" onclick="generate()">
+        <span id="genBtnText">만들기</span>
+        <span class="arrow">→</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ 우측 캔버스 ============ -->
+  <main class="canvas">
+    <div class="canvas-header">
+      <h1 class="canvas-title">Reference <em id="atelierLabel">Atelier · 기초디자인</em></h1>
+      <div class="history-actions">
+        <span class="counter" id="counter">생성 0건</span>
+        <button class="history-clear" id="migrateBtn" onclick="migrateLocalToCloud()" title="이 브라우저에 남은 기존 생성물을 클라우드로 1회 업로드" style="border-color:#0d6efd;color:#0d6efd;">☁️ 기존→클라우드</button>
+        <button class="history-clear" id="clearAllBtn" onclick="clearAllHistory()" style="display:none;">전체 삭제</button>
+      </div>
+    </div>
+
+    <div id="emptyState" class="empty">
+      <!-- 액체 Chrome Blob (SVG · 펑키 데코) -->
+      <svg class="chrome-blob" id="chromeBlob" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="chromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fafafa"/>
+            <stop offset="20%" stop-color="#d4d4d4"/>
+            <stop offset="45%" stop-color="#5a5a5a"/>
+            <stop offset="55%" stop-color="#888888"/>
+            <stop offset="75%" stop-color="#2a2a2a"/>
+            <stop offset="100%" stop-color="#0a0a0a"/>
+          </linearGradient>
+          <radialGradient id="chromeHi" cx="30%" cy="25%" r="60%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+            <stop offset="40%" stop-color="#ffffff" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="chromeShadow" cx="70%" cy="75%" r="50%">
+            <stop offset="0%" stop-color="#000000" stop-opacity="0.55"/>
+            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <path id="chromeBlobPath" fill="url(#chromeGrad)">
+          <animate attributeName="d" dur="9s" repeatCount="indefinite"
+            values="
+M 100,30 C 145,30 175,60 175,100 C 175,140 145,170 100,170 C 55,170 25,140 25,100 C 25,60 55,30 100,30 Z;
+M 100,25 C 155,35 170,75 165,110 C 160,150 130,175 95,170 C 50,165 30,135 30,95 C 30,55 60,20 100,25 Z;
+M 105,32 C 150,40 180,75 170,115 C 158,155 120,175 85,165 C 45,153 22,118 32,80 C 42,45 70,28 105,32 Z;
+M 100,30 C 145,30 175,60 175,100 C 175,140 145,170 100,170 C 55,170 25,140 25,100 C 25,60 55,30 100,30 Z"/>
+        </path>
+        <path id="chromeBlobHi" fill="url(#chromeHi)">
+          <animate attributeName="d" dur="9s" repeatCount="indefinite"
+            values="
+M 100,30 C 145,30 175,60 175,100 C 175,140 145,170 100,170 C 55,170 25,140 25,100 C 25,60 55,30 100,30 Z;
+M 100,25 C 155,35 170,75 165,110 C 160,150 130,175 95,170 C 50,165 30,135 30,95 C 30,55 60,20 100,25 Z;
+M 105,32 C 150,40 180,75 170,115 C 158,155 120,175 85,165 C 45,153 22,118 32,80 C 42,45 70,28 105,32 Z;
+M 100,30 C 145,30 175,60 175,100 C 175,140 145,170 100,170 C 55,170 25,140 25,100 C 25,60 55,30 100,30 Z"/>
+        </path>
+        <ellipse cx="100" cy="100" rx="80" ry="80" fill="url(#chromeShadow)"/>
+      </svg>
+      
+      <div class="empty-title">만들어<br>봅시다</div>
+      <div class="empty-desc" id="emptyDesc">제시어 또는 참고 사진을 넣고 → 시안을 생성하세요.</div>
+      <div class="empty-flow" style="margin-top:24px;">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-label">API 키</div></div>
+        <span class="flow-arr">→</span>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-label">입력</div></div>
+        <span class="flow-arr">→</span>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-label">생성</div></div>
+      </div>
+    </div>
+
+    <div id="results" class="results" style="display:none;"></div>
+  </main>
+</div>
+
+<div id="toast" class="toast" style="display:none;"></div>
+
+<!-- 라이트박스 (이미지 확대 뷰어) -->
+<div id="lightbox" class="lightbox">
+  <div class="lb-top">
+    <div class="lb-title" id="lbTitle"></div>
+    <div class="lb-actions">
+      <button class="lb-btn" id="lbResetBtn" title="원래 크기">↻</button>
+      <button class="lb-btn" id="lbDlBtn" title="다운로드">↓</button>
+      <button class="lb-btn" id="lbCloseBtn" title="닫기">×</button>
+    </div>
+  </div>
+  <div class="lb-img-wrap" id="lbImgWrap">
+    <img id="lbImg" class="lb-img" src="" alt="">
+  </div>
+  <div class="lb-zoom-indicator" id="lbZoom">100%</div>
+  <div class="lb-bottom">
+    <div class="lb-prompt" id="lbPrompt"></div>
+    <div class="lb-hint">두 손가락 = 줌 · 한 손가락 = 이동 · 더블탭 = 리셋</div>
+  </div>
+</div>
+
+<div id="modal" class="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">생성 정보</div>
+      <span class="modal-close" onclick="closeModal()">×</span>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ============ 상태 ============
+const state = {
+  apiKey: '',
+  prompt: '',
+  composition: '',
+  tone: 'dynamic',  // 'dynamic' | 'static' (주제부 연출 모드 전용)
+  refs: [],
+  compRefs: [],
+  styleRefs: [],          // 🎨 스타일 참고 이미지 (최대 10장) - 채색감/터치/화풍 참고
+  activeDropzone: 'refs',
+  count: 2,
+  quality: 'medium',
+  tab: 'gidi',
+  // ===== 통제 옵션 (gidi·soyang 모드에만 적용, research는 미적용) =====
+  intent: 'sibumjak',     // 'balsang'(발상용) | 'sibumjak'(시범작) | 'seolmyeong'(설명용)
+  whitespace: 'normal',   // 'less'(20%) | 'normal'(30%) | 'more'(40%)
+  effects: 'low',         // 'none' | 'low' | 'high'
+  heavyMode: false,       // 🎬 디렉터 모드 모드
+  // ===== 입시 유형 대응 =====
+  supportSubjects: '',    // 보조 소재 (콤마 구분 문자열)
+  examInfo: null,         // 시험지 분석 결과 {university, paperSize, theme, themeKeywords, finalGoal, formatHint}
+  analyzeMode: 'subject', // 'subject'(소재만) | 'exam'(시험지 전체)
+  results: [],
+  generating: false,
+  analyzing: false
+};
+// ============ 메인/보조 소재 + 시험지 정보 헬퍼 ============
+function updatePromptCharCount(){
+  const mainLen = (state.prompt || '').length;
+  const supLen = (state.supportSubjects || '').length;
+  document.getElementById('charCount').textContent = `${mainLen}+${supLen}자`;
+}
+
+function clearExamInfo(){
+  state.examInfo = null;
+  const box = document.getElementById('examInfoBox');
+  if(box) box.style.display = 'none';
+  saveSession();
+  toast('시험지 정보 초기화됨');
+}
+
+function renderExamInfoBox(){
+  const box = document.getElementById('examInfoBox');
+  const summary = document.getElementById('examInfoSummary');
+  if(!state.examInfo){ if(box) box.style.display='none'; return; }
+  const e = state.examInfo;
+  const parts = [];
+  if(e.university) parts.push('🏫 ' + e.university);
+  if(e.paperSize) parts.push('📏 ' + e.paperSize);
+  if(e.theme) parts.push('💡 제시어: ' + e.theme);
+  if(e.themeInterpretation) parts.push('🔍 해석: ' + e.themeInterpretation);
+  if(e.finalGoal) parts.push('🎯 최종 목표: ' + e.finalGoal);
+  if(e.formatHint) parts.push('🎨 형식: ' + e.formatHint);
+  if(summary) summary.innerHTML = parts.map(p=>`<div style="margin-bottom:3px;">${escapeHtml(p)}</div>`).join('');
+  if(box) box.style.display = 'block';
+}
+
+function applyExamAnalysisResult(info){
+  // 시험지 분석 결과를 폼에 적용
+  state.examInfo = {
+    university: info.university || '',
+    paperSize: info.paper_size || info.paperSize || '',
+    theme: info.theme || (info.theme_keywords ? info.theme_keywords.join(', ') : ''),
+    themeKeywords: info.theme_keywords || [],
+    themeInterpretation: info.theme_interpretation || info.themeInterpretation || '',  // ★ 제시어 해석
+    finalGoal: info.final_goal || info.finalGoal || '',
+    formatHint: info.format_hint || info.formatHint || '',
+    rawQuestion1: info.question1 || '',
+    rawQuestion2: info.question2 || ''
+  };
+  if(info.main_subject){
+    state.prompt = info.main_subject;
+    const t = document.getElementById('promptText');
+    if(t) t.value = info.main_subject;
+  }
+  if(info.support_subjects && info.support_subjects.length){
+    const sup = info.support_subjects.join(', ');
+    state.supportSubjects = sup;
+    const s = document.getElementById('supportSubjectsText');
+    if(s) s.value = sup;
+  }
+  updatePromptCharCount();
+  renderExamInfoBox();
+  saveSession();
+}
+
+
+
+// ============ IndexedDB (생성물 영구 저장) ============
+const DB_NAME = 'hi5_designer_db';
+const DB_VERSION = 3;
+const STORE = 'generations';
+const STYLE_STORE = 'styleLibrary';   // 🎨 스타일 참고 이미지 라이브러리
+const STYLE_LIB_MAX = 30;             // 최대 30개 보관, 초과 시 오래된 것 삭제
+const SESSION_STORE = 'sessionState'; // 💾 현재 작업 세션 (첨부물 등 자동 복원용)
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        const store = db.createObjectStore(STORE, {keyPath:'id'});
+        store.createIndex('timestamp', 'timestamp');
+      }
+      if(!db.objectStoreNames.contains(STYLE_STORE)){
+        const sStore = db.createObjectStore(STYLE_STORE, {keyPath:'id'});
+        sStore.createIndex('timestamp', 'timestamp');
+        sStore.createIndex('hash', 'hash', {unique: false});
+      }
+      if(!db.objectStoreNames.contains(SESSION_STORE)){
+        db.createObjectStore(SESSION_STORE, {keyPath:'key'});
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+// ============ 💾 작업 세션 저장/복원 ============
+// 첨부물(refs/compRefs/styleRefs), 시험지 정보, 입력값, 옵션 등을 자동 저장
+let _saveSessionTimer = null;
+function saveSession(){
+  if(_saveSessionTimer) clearTimeout(_saveSessionTimer);
+  _saveSessionTimer = setTimeout(_doSaveSession, 500);
+}
+async function _doSaveSession(){
+  try {
+    const snapshot = {
+      key: 'current',
+      timestamp: Date.now(),
+      // 첨부물 (이미지)
+      refs: state.refs || [],
+      compRefs: state.compRefs || [],
+      styleRefs: state.styleRefs || [],
+      // 입력값
+      prompt: state.prompt || '',
+      supportSubjects: state.supportSubjects || '',
+      composition: state.composition || '',
+      // 옵션
+      tab: state.tab || 'gidi',
+      tone: state.tone || 'dynamic',
+      intent: state.intent || 'sibumjak',
+      whitespace: state.whitespace || 'normal',
+      effects: state.effects || 'low',
+      heavyMode: !!state.heavyMode,
+      analyzeMode: state.analyzeMode || 'subject',
+      count: state.count || 2,
+      quality: state.quality || 'medium',
+      aspectRatio: state.aspectRatio || 'landscape',
+      examInfo: state.examInfo || null
+    };
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SESSION_STORE, 'readwrite');
+      tx.objectStore(SESSION_STORE).put(snapshot);
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e){
+    console.warn('세션 저장 실패:', e);
+  }
+}
+
+async function loadSession(){
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(SESSION_STORE, 'readonly');
+      const req = tx.objectStore(SESSION_STORE).get('current');
+      req.onsuccess = e => resolve(e.target.result || null);
+      req.onerror = e => reject(e.target.error);
+    });
+  } catch(e){
+    console.warn('세션 로드 실패:', e);
+    return null;
+  }
+}
+
+async function clearSession(){
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(SESSION_STORE, 'readwrite');
+      tx.objectStore(SESSION_STORE).delete('current');
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e){
+    console.warn('세션 삭제 실패:', e);
+  }
+}
+// ============ 🗑 현재 작업 비우기 ============
+async function clearCurrentSession(){
+  if(!confirm('현재 작업을 모두 비울까요?\n\n• 첨부한 사물 참고·구도 참고·스타일 참고 이미지\n• 시험지 분석 정보\n• 입력한 제시어·보조소재·구도 텍스트\n\n(저장된 생성물은 영향 없음)')) return;
+  
+  // 메모리 상태 초기화
+  state.refs = [];
+  state.compRefs = [];
+  state.styleRefs = [];
+  state.prompt = '';
+  state.supportSubjects = '';
+  state.composition = '';
+  state.examInfo = null;
+  
+  // UI 초기화
+  const ids = ['promptText', 'supportSubjectsText', 'compositionText'];
+  ids.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  
+  renderRefs();
+  renderCompRefs();
+  renderStyleRefs();
+  if(typeof updatePromptCharCount === 'function') updatePromptCharCount();
+  if(typeof renderExamInfoBox === 'function') renderExamInfoBox();
+  
+  // 세션 DB도 삭제
+  await clearSession();
+  
+  toast('🗑 현재 작업 초기화 완료');
+}
+
+
+// ============ 🎨 스타일 라이브러리 ============
+async function _hashString(s){
+  // dataUrl의 base64 부분 앞 6KB로 SHA-1 해시 (중복 판별용)
+  const enc = new TextEncoder();
+  const sample = s.slice(0, 6000);
+  const buf = await crypto.subtle.digest('SHA-1', enc.encode(sample));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function saveToStyleLibrary(item){
+  const base = item.base64 || (item.dataUrl ? item.dataUrl.split(',')[1] : '');
+  if(!base) return;
+  const hash = await _hashString(base);
+  const db = await openDB();
+  // 동일 해시 존재 확인
+  const existing = await new Promise((resolve, reject) => {
+    const tx = db.transaction(STYLE_STORE, 'readonly');
+    const idx = tx.objectStore(STYLE_STORE).index('hash');
+    const req = idx.get(hash);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+  if(existing){ console.log('스타일 라이브러리 중복 — 저장 생략'); return; }
+  // 새로 저장
+  const id = 'style_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+  const record = {
+    id,
+    hash,
+    name: item.name || '',
+    libraryName: item.libraryName || '',
+    mimeType: item.mimeType || 'image/png',
+    dataUrl: item.dataUrl,
+    base64: base,
+    timestamp: Date.now()
+  };
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STYLE_STORE, 'readwrite');
+    tx.objectStore(STYLE_STORE).put(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+  // 30개 초과 시 오래된 것 삭제
+  const all = await styleLibLoadAll();
+  if(all.length > STYLE_LIB_MAX){
+    const sorted = all.sort((a,b) => a.timestamp - b.timestamp);
+    const toDelete = sorted.slice(0, all.length - STYLE_LIB_MAX);
+    for(const r of toDelete) await styleLibDelete(r.id);
+  }
+  console.log('스타일 라이브러리 저장됨:', id);
+}
+
+async function styleLibLoadAll(){
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STYLE_STORE, 'readonly');
+      const req = tx.objectStore(STYLE_STORE).getAll();
+      req.onsuccess = e => resolve(e.target.result || []);
+      req.onerror = e => reject(e.target.error);
+    });
+  } catch(e){ console.error('스타일 라이브러리 로드 실패:', e); return []; }
+}
+
+async function styleLibDelete(id){
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STYLE_STORE, 'readwrite');
+      tx.objectStore(STYLE_STORE).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e){ console.error('스타일 라이브러리 삭제 실패:', e); }
+}
+
+async function styleLibUpdate(id, updates){
+  try {
+    const db = await openDB();
+    const existing = await new Promise((resolve, reject) => {
+      const tx = db.transaction(STYLE_STORE, 'readonly');
+      const req = tx.objectStore(STYLE_STORE).get(id);
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror = e => reject(e.target.error);
+    });
+    if(!existing) return;
+    Object.assign(existing, updates);
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STYLE_STORE, 'readwrite');
+      tx.objectStore(STYLE_STORE).put(existing);
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e){ console.error('스타일 라이브러리 업데이트 실패:', e); }
+}
+// ============ 🎨 스타일 라이브러리 모달 ============
+async function openStyleLibrary(){
+  const all = await styleLibLoadAll();
+  const sorted = all.sort((a,b) => b.timestamp - a.timestamp);
+  
+  // 현재 styleRefs에 들어있는 해시 (선택 표시용)
+  const activeHashes = new Set();
+  for(const r of state.styleRefs){
+    if(r.base64){
+      const h = await _hashString(r.base64);
+      activeHashes.add(h);
+    }
+  }
+  
+  const itemsHtml = sorted.length === 0 
+    ? `<div style="text-align:center;padding:40px 20px;color:var(--ink-3);font-size:12px;line-height:1.6;">
+        아직 저장된 스타일이 없습니다.<br>
+        스타일 참고 이미지를 업로드하면<br>자동으로 라이브러리에 저장됩니다.
+      </div>`
+    : `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">
+        ${sorted.map(r => {
+          const isActive = activeHashes.has(r.hash);
+          const label = r.libraryName || r.name || '(이름 없음)';
+          return `
+            <div data-lib-id="${r.id}" style="border:2px solid ${isActive?'#c0392b':'var(--line)'};background:${isActive?'#fff3f1':'#fff'};position:relative;cursor:pointer;transition:all .12s;" 
+                 onclick="toggleStyleFromLib('${r.id}')">
+              <div style="aspect-ratio:1/1;background:#f5f5f5;overflow:hidden;">
+                <img src="${r.dataUrl}" style="width:100%;height:100%;object-fit:cover;" alt="">
+              </div>
+              <div style="padding:6px 8px;font-size:10px;line-height:1.3;border-top:1px solid var(--line);min-height:32px;">
+                <div style="font-weight:700;color:var(--ink-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(label)}</div>
+                <div style="color:var(--ink-3);font-size:9px;margin-top:2px;">${new Date(r.timestamp).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}</div>
+              </div>
+              ${isActive ? '<div style="position:absolute;top:4px;right:4px;background:#c0392b;color:#fff;font-size:9px;padding:2px 6px;font-weight:800;">✓ 사용중</div>' : ''}
+              <div style="position:absolute;top:4px;left:4px;display:flex;gap:4px;">
+                <button onclick="event.stopPropagation();renameStyleLib('${r.id}')" 
+                        style="background:rgba(255,255,255,0.9);border:1px solid var(--line);font-size:9px;padding:2px 5px;cursor:pointer;" 
+                        title="이름 편집">✏</button>
+                <button onclick="event.stopPropagation();deleteStyleLib('${r.id}')" 
+                        style="background:rgba(255,255,255,0.9);border:1px solid var(--line);font-size:9px;padding:2px 5px;cursor:pointer;color:#c0392b;" 
+                        title="라이브러리에서 삭제">🗑</button>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section">
+      <h4>📚 스타일 라이브러리 (${sorted.length}/${STYLE_LIB_MAX})</h4>
+      <div style="font-size:10px;color:var(--ink-3);margin-bottom:12px;line-height:1.5;">
+        썸네일 클릭으로 현재 스타일 참고에 추가/제거 · ✏ 이름 편집 · 🗑 삭제<br>
+        한도(${STYLE_LIB_MAX}개) 초과 시 가장 오래된 것이 자동 삭제됩니다.
+      </div>
+      ${itemsHtml}
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="result-btn primary" style="flex:1;padding:10px;" onclick="closeModal()">완료</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('show');
+}
+
+async function toggleStyleFromLib(id){
+  const all = await styleLibLoadAll();
+  const item = all.find(r => r.id === id);
+  if(!item) return;
+  
+  // 이미 있는지 확인
+  let foundIdx = -1;
+  for(let i=0; i<state.styleRefs.length; i++){
+    const r = state.styleRefs[i];
+    if(r.base64){
+      const h = await _hashString(r.base64);
+      if(h === item.hash){ foundIdx = i; break; }
+    }
+  }
+  
+  if(foundIdx >= 0){
+    // 제거
+    state.styleRefs.splice(foundIdx, 1);
+    renderStyleRefs();
+    toast('스타일 참고에서 제거됨');
+  } else {
+    // 추가
+    if(state.styleRefs.length >= 10){ toast('최대 10장까지만 사용 가능'); return; }
+    state.styleRefs.push({
+      name: item.name,
+      libraryName: item.libraryName,
+      mimeType: item.mimeType,
+      dataUrl: item.dataUrl,
+      base64: item.base64
+    });
+    renderStyleRefs();
+    toast('스타일 참고에 추가됨');
+  }
+  // 모달 새로고침
+  openStyleLibrary();
+}
+
+async function renameStyleLib(id){
+  const all = await styleLibLoadAll();
+  const item = all.find(r => r.id === id);
+  if(!item) return;
+  const current = item.libraryName || item.name || '';
+  const newName = prompt('스타일 이름 (예: "마카+수채 톤", "건국대 합격작 스타일"):', current);
+  if(newName === null) return;
+  await styleLibUpdate(id, {libraryName: newName.trim()});
+  // 현재 styleRefs에도 같은 해시 있으면 이름 업데이트
+  for(const r of state.styleRefs){
+    if(r.base64){
+      const h = await _hashString(r.base64);
+      if(h === item.hash) r.libraryName = newName.trim();
+    }
+  }
+  renderStyleRefs();
+  openStyleLibrary();
+  toast('이름 변경됨');
+}
+
+async function deleteStyleLib(id){
+  if(!confirm('라이브러리에서 영구 삭제할까요? (현재 사용 중인 슬롯에는 영향 없음)')) return;
+  await styleLibDelete(id);
+  openStyleLibrary();
+  toast('라이브러리에서 삭제됨');
+}
+
+
+
+// ============ ☁️ Supabase 클라우드 저장 ============
+// 생성물(generations)을 Supabase 테이블 + Storage에 저장해 기기 간 동기화.
+// (스타일 라이브러리·작업 세션은 기존대로 이 브라우저 IndexedDB에 보관)
+const SUPABASE_URL  = 'https://gbjvkbtvcurgsonynokw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdianZrYnR2Y3VyZ3Nvbnlub2t3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5ODM0MDIsImV4cCI6MjA5MzU1OTQwMn0.BJtft6sP0Aw_GiBso9tamLd7nBuy7eoMfPRs5tAaEkM';
+const SB_BUCKET = 'drawlab';
+let _sbClient = null;
+function sb(){
+  if(_sbClient) return _sbClient;
+  if(!(window.supabase && window.supabase.createClient)){
+    console.error('supabase-js 미로드 — 네트워크/CDN 확인');
+    return null;
+  }
+  _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  return _sbClient;
+}
+
+// data URL → Blob
+function _dataUrlToBlob(dataUrl){
+  const comma = dataUrl.indexOf(',');
+  const head = dataUrl.slice(0, comma);
+  const b64  = dataUrl.slice(comma + 1);
+  const mime = (head.match(/data:(.*?);/) || [])[1] || 'image/png';
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0; i<bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: mime});
+}
+
+// 참고이미지 배열에서 무거운 base64/dataUrl 제거 (payload 경량화)
+function _lightRefs(arr){
+  return Array.isArray(arr) ? arr.map(x => ({name: x && x.name, mimeType: x && x.mimeType})) : (arr || null);
+}
+
+async function dbSave(record){
+  const client = sb();
+  if(!client){ console.error('Supabase 미연결 — 저장 건너뜀'); return; }
+  try {
+    // 1) 출력 이미지 → Storage 업로드
+    let image_url = null, image_path = null;
+    const du = record.image && record.image.dataUrl;
+    if(du && du.startsWith('data:')){
+      image_path = `generations/${record.id}.png`;
+      const blob = _dataUrlToBlob(du);
+      const { error: upErr } = await client.storage.from(SB_BUCKET)
+        .upload(image_path, blob, {contentType: 'image/png', upsert: true});
+      if(upErr) throw upErr;
+      const { data: pub } = client.storage.from(SB_BUCKET).getPublicUrl(image_path);
+      image_url = pub.publicUrl;
+    } else if(du){          // 이미 URL (클라우드에서 로드된 레코드 재저장)
+      image_url = du;
+      image_path = record.image_path || null;
+    }
+
+    // 2) payload = record 사본(무거운 base64 제거) + 로드용 image URL
+    const { image, refs, compRefs, styleRefs, ...rest } = record;
+    const payload = {
+      ...rest,
+      refs:      _lightRefs(refs),
+      compRefs:  _lightRefs(compRefs),
+      styleRefs: _lightRefs(styleRefs),
+      image:      {mimeType: 'image/png', dataUrl: image_url},
+      image_path: image_path
+    };
+
+    // 3) 행 upsert
+    const { error } = await client.from('drawlab_generations').upsert({
+      id: record.id,
+      tab: record.tab || null,
+      prompt: record.prompt || null,
+      image_path,
+      image_url,
+      payload
+    });
+    if(error) throw error;
+  } catch(e){
+    console.error('Supabase save 실패:', e);
+    toast('⚠️ 클라우드 저장 실패 (콘솔 확인)');
+  }
+}
+
+async function dbLoadAll(){
+  const client = sb();
+  if(!client) return [];
+  try {
+    const { data, error } = await client.from('drawlab_generations')
+      .select('payload').order('id', {ascending: false});
+    if(error) throw error;
+    const recs = (data || []).map(r => r.payload).filter(Boolean);
+    recs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    return recs;
+  } catch(e){
+    console.error('Supabase load 실패:', e);
+    return [];
+  }
+}
+
+async function dbDelete(id){
+  const client = sb();
+  if(!client) return;
+  try {
+    await client.storage.from(SB_BUCKET).remove([`generations/${id}.png`]);
+    const { error } = await client.from('drawlab_generations').delete().eq('id', id);
+    if(error) throw error;
+  } catch(e){
+    console.error('Supabase delete 실패:', e);
+  }
+}
+
+async function dbClearAll(){
+  const client = sb();
+  if(!client) return;
+  try {
+    const { data } = await client.from('drawlab_generations').select('image_path');
+    const paths = (data || []).map(r => r.image_path).filter(Boolean);
+    if(paths.length) await client.storage.from(SB_BUCKET).remove(paths);
+    const { error } = await client.from('drawlab_generations').delete().neq('id', '');
+    if(error) throw error;
+  } catch(e){
+    console.error('Supabase clear 실패:', e);
+  }
+}
+
+// 기존 IndexedDB 생성물을 클라우드로 1회 업로드 (마이그레이션)
+async function migrateLocalToCloud(){
+  if(!confirm('이 브라우저에 저장된 기존 생성물을 클라우드로 올릴까요?\n(이미 올라간 건 자동 덮어쓰기 — 안전)')) return;
+  try {
+    const db = await openDB();
+    const local = await new Promise(res => {
+      const tx = db.transaction(STORE, 'readonly');
+      const rq = tx.objectStore(STORE).getAll();
+      rq.onsuccess = e => res(e.target.result || []);
+      rq.onerror = () => res([]);
+    });
+    if(!local.length){ toast('올릴 로컬 생성물이 없습니다'); return; }
+    toast(`클라우드 업로드 시작 (${local.length}건)...`);
+    let ok = 0;
+    for(const rec of local){
+      try { await dbSave(rec); ok++; } catch(e){ console.error(e); }
+    }
+    toast(`✅ 클라우드 업로드 완료: ${ok}/${local.length}건`);
+  } catch(e){
+    console.error('마이그레이션 실패:', e);
+    toast('마이그레이션 실패 (콘솔 확인)');
+  }
+}
+window.migrateLocalToCloud = migrateLocalToCloud;
+
+// ============ 기초디자인 프롬프트 (입시 완성작 스타일 — 통제 강화판) ============
+const GIDI_PROMPT = `입시 기초디자인 완성작 스타일. 4:3 가로 비율.
+
+{EXAM_INFO}[메인 소재 — 화면의 40% 이상, 전체 형태 명확히 보일 것]
+{PROMPT}
+
+[보조 소재 — 모두 빠짐없이 화면에 등장. 각각 작거나 부분적으로, 메인보다 약하게]
+{SUPPORT_SUBJECTS}
+
+[지정 구도]
+{COMPOSITION}
+
+[입시 강사 분석 — 소재별 맞춤 구성안]
+{ANALYSIS}
+
+[결과물 성격]
+{INTENT}
+
+★★★ 절대 규칙 — 반드시 지킬 것 ★★★
+1) 제시된 소재만 정확히 사용. 추가 사물·요소·장식 절대 금지.
+2) 메인 소재는 화면의 40% 이상을 차지하고, 전체 형태가 명확히 보이게 배치.
+3) 보조 소재가 나열되어 있다면 **하나도 빠뜨리지 말고 모두** 화면에 등장시킬 것. 각 보조 소재는 메인보다 작거나 부분적으로 표현. 보조를 누락하거나 묶어서 처리 금지.
+4) 화면의 {WHITESPACE_PCT}% 정도는 깨끗한 흰 여백으로 남길 것. 소재가 화면 전체를 가득 덮지 않게 한다.
+5) 같은 소재의 반복은 최대 3개까지만. 원경 실루엣은 1~2개만 작고 흐리게.
+6) 모든 요소가 비슷한 강도로 보이지 않게 한다 — 메인은 강하게, 보조는 약하게.
+
+[여백 제어]
+- 화면의 {WHITESPACE_PCT}% 정도는 깨끗한 흰 여백으로 남긴다.
+- 소재와 효과가 화면 전체를 가득 덮지 않게 한다.
+- 주제부는 강하게 보이되, 주변은 비워서 시선이 중심으로 모이게 한다.
+- 배경은 복잡하게 채우지 않고, 흰 화지의 공간감을 유지한다.
+
+[소재 반복 제한]
+- 중심 소재는 큰 전체형 1개가 반드시 명확하게 보여야 한다.
+- 같은 소재의 반복은 최대 3개까지만 허용한다.
+- 원경 실루엣은 1~2개만 작고 흐리게 배치한다.
+- 불필요한 소재 증식은 금지한다.
+- 반복 소재는 주제부를 보조하는 역할로만 사용한다.
+
+[주제부 강조]
+- 시선이 가장 먼저 가는 중심 소재를 명확히 설정한다.
+- 중심 소재는 중경에 가장 강하게 배치한다.
+- 근경은 부분 확대와 깊이감 표현용으로만 사용한다.
+- 원경은 흐름과 공간감 보조용으로만 사용한다.
+- 모든 요소가 비슷한 강도로 보이지 않게 한다.
+
+[물줄기·선형 효과 사용 기준]
+{EFFECTS_RULE}
+
+[화면 구성]
+- 흰 배경 위에 지정된 구도로 구성
+- 근경, 중경, 원경이 명확히 보이도록 배치, 주제부는 중경에 가장 강하게
+- 뒤로 갈수록 채도와 명암 대비를 낮추고 경계를 부드럽게 처리해 공기원근법
+- 앞쪽 오브젝트는 선명하고 디테일하게, 뒤쪽 오브젝트는 흐리고 가볍게
+- 바닥에 얌전히 놓인 정물 배치는 금지 — 공중에서 관계성을 가진 한 장면
+
+[배경 — 절대 흰 화지만 사용 (매우 중요)]
+- 배경은 오직 깨끗한 흰 화지(순백색 #ffffff)만 사용한다.
+- 나무·숲·산·언덕·들판·하늘·구름·도시·건물·집·길·강·바다·해변·지평선·지면·바닥선 같은 풍경 요소를 일체 그리지 말 것.
+- 흐릿한 수채화풍 풍경·산수화 톤·환경 묘사·실루엣·먼 풍경도 금지.
+- 소재 뒤에 어떤 장면이나 환경도 그리지 말 것 — 모든 소재는 흰 화지 위에 떠 있는 한 장면.
+- 배경에 그려진 어떤 것이라도 발견되면 그 자체로 잘못된 결과물이다.
+
+[화면 모서리 규칙 — 답답함 방지]
+- 화면의 네 꼭짓점(좌상·우상·좌하·우하) 중 **최대 2곳만** 소재나 효과로 가릴 것.
+- 나머지 **2곳 이상의 꼭짓점은 반드시 깨끗한 흰 여백** 상태로 유지.
+- 4개 모서리가 모두 소재로 채워지면 화면이 답답해 보이므로 절대 금지.
+- 모서리 여백은 화면의 호흡과 시선 집중을 만드는 핵심.
+
+[재질·표현]
+- 투명체, 반사체, 금속체, 플라스틱, 자연물, 종이, 섬유 등 서로 다른 재질 대비
+- 마카, 수채, 색연필, 과슈가 섞인 손그림 채색감
+- 형태력은 사실적으로, 디테일과 재질감을 우선 표현
+- 화려한 효과보다 소재의 구조와 표현력이 먼저 보여야 한다.
+
+[입시 기초디자인 느낌 강화]
+- 단순한 판타지 일러스트나 게임 콘셉트 아트처럼 보이지 않게 한다.
+- 실제 입시 실기실에서 그린 고난도 기초디자인 완성작처럼 보이게 한다.
+- 형태력, 재질감, 명암, 공간감, 주제부 집중이 우선이다.
+- 마카, 수채, 과슈, 색연필이 섞인 손그림 입시 실기 표현으로 보이게 한다.
+
+[절대 금지]
+- 바닥에 정물처럼 얌전히 놓지 말 것
+- 평면적인 일러스트, 게임 콘셉트 아트, 3D 렌더링 톤 금지
+- ❌ 배경에 나무·숲·산·풍경·하늘·구름·건물·도시·길·바다 등 환경 요소 금지
+- ❌ 흐릿한 수채 풍경·산수화·먼 실루엣 배경도 금지 (오로지 흰 화지만)
+- ❌ 4개 모서리 모두를 소재나 효과로 가리는 답답한 구성 금지 (최소 2개 모서리는 흰 여백)
+- 글자, 로고, 워터마크, 숫자, 설명 문구 일체 금지
+- 중심 소재가 전부 잘려서 알아보기 어려운 구성 금지
+- 너무 어둡거나 블랙 배경 금지
+- 화면을 가득 채워서 여백이 사라지는 구성 금지
+- 같은 소재가 화면에 4개 이상 반복되는 구성 금지
+- 효과(물줄기·파편·튐)가 주제 소재보다 더 강하게 보이는 구성 금지{REF_PART}`;
+
+// ============ 소재 분석 프롬프트 (입시 강사 시각) ============
+const SUBJECT_ANALYSIS_PROMPT = `당신은 한국 미대 입시 기초디자인을 15년 가르친 베테랑 강사입니다. 다음 소재로 학생에게 보여줄 우수작 구성안을 작성해주세요.
+
+[소재]
+{PROMPT}
+
+[지정 구도]
+{COMPOSITION}
+
+다음 항목을 모두 포함해 250~350자 자연스러운 한국어 단락으로 작성하세요 (불릿/번호 사용 금지):
+
+1. 구도 적용: 지정된 구도가 있으면 그 구도를 기준으로 작품 흐름을 설계 (지정 구도 없으면 소재에 가장 어울리는 구도 추천)
+2. 주제부 배치: 중경에 어떤 사물을 어떻게 겹치거나 강조할지 (사물끼리 겹쳐서 굴절/왜곡 효과가 나도록)
+3. 근경 디테일: 어떤 사물의 어떤 부분을 확대/잘라서 보조 연출할지 (단, 각 사물의 전체 형태는 한 번은 온전히 보여야 함)
+4. 원경 처리: 어떤 요소를 작고 흐리게 반복 배치할지
+5. 재질 대비 포인트: 이 소재들이 가진 재질의 대비 (투명체/반사체/금속체/자연물 중 어떤 것이 있는지)
+6. 왜곡/굴절 효과: 투명체나 반사체가 있다면 어떤 다른 사물을 왜곡시킬지
+7. 사물별 리듬감: 각 사물의 시각적 리듬 (반복·원형·직선 등)이 어떻게 조화될지
+
+중요:
+- 제시된 사물만 사용. 추가 사물 절대 추가 금지.
+- 지정 구도가 있으면 반드시 그 구도를 우선 적용.
+- 단순 정물 배치가 아닌, 각 사물의 전체형 + 확대 디테일이 함께 보이는 입시 우수작 구성.
+- 다른 설명·제목·인사 없이 구성안 단락만 답변.`;
+
+
+// ============ Heavy 디렉팅 5단계 파이프라인 ============
+async function runHeavyDirecting(progressCallback){
+  const isFocal = state.tab === 'soyang';
+  const intent = state.intent || 'sibumjak';
+  const ws = state.whitespace || 'normal';
+  const fx = state.effects || 'low';
+  
+  const intentLabel = ({balsang:'발상용 레퍼런스', sibumjak:'입시 시범작', seolmyeong:'학생 설명용'})[intent];
+  const wsPct = ({less:20, normal:30, more:40})[ws];
+  const fxLabel = ({none:'없음 (소재만)', low:'약 (최소)', high:'강 (통제된 범위)'})[fx];
+  const toneLabel = state.tone === 'static' ? '정적 (균형·안정·명상적)' : '동적 (움직임·흐름·변화의 순간)';
+  const modeLabel = isFocal ? '주제부 중심 (개체 표현)' : '전체 구성 (기초디자인 완성작)';
+  
+  // ===== 1차 호출: 깊은 분석 + 구성 후보 3안 =====
+  progressCallback && progressCallback('소재 깊이 분석 + 구성 후보 3안 생성 중...');
+  
+  let analyzeTemplate = isFocal ? HEAVY_ANALYZE_SOYANG : HEAVY_ANALYZE_GIDI;
+  // 보조 소재 + 시험지 정보 처리
+  const supports = (state.supportSubjects || '').trim();
+  const supportText = supports || '(보조 소재 없음 — 메인 소재만 사용)';
+  
+  let examTextHeavy = '';
+  if(state.examInfo){
+    const e = state.examInfo;
+    const lines = [];
+    if(e.university) lines.push('대학: ' + e.university);
+    if(e.paperSize) lines.push('규격: ' + e.paperSize);
+    if(e.theme) lines.push('제시어: ' + e.theme);
+    if(e.finalGoal) lines.push('최종 목표: ' + e.finalGoal);
+    if(e.formatHint) lines.push('표현 형식: ' + e.formatHint);
+    if(lines.length){
+      examTextHeavy = '[입시 유형 정보 — 모든 디렉팅에 반드시 반영]\n' + lines.join('\n') + '\n\n';
+    }
+    if(e.themeInterpretation){
+      examTextHeavy += '[★ 제시어 시각 해석 — 후보 3안 모두 이 해석을 반영해 만들 것 ★]\n' + e.themeInterpretation + '\n\n';
+    }
+  }
+  
+  let analyzePrompt = analyzeTemplate
+    .replaceAll('{PROMPT}', state.prompt || '자유주제')
+    .replaceAll('{SUPPORT_SUBJECTS}', supportText)
+    .replaceAll('{EXAM_INFO_HEAVY}', examTextHeavy)
+    .replace('{COMPOSITION}', state.composition || '(미지정 - 디렉터 추천)')
+    .replace('{TONE_LABEL}', toneLabel)
+    .replace('{INTENT_LABEL}', intentLabel)
+    .replaceAll('{WHITESPACE_PCT}', String(wsPct))
+    .replace('{EFFECTS_LABEL}', fxLabel);
+  
+  // 참고이미지를 멀티모달로 함께 전달
+  const content1 = [{type: 'text', text: analyzePrompt}];
+  if(state.refs && state.refs.length){
+    content1.push({type: 'text', text: '\n\n[소재 참고 이미지 — 이 사물들의 형태·재질을 정확히 분석에 반영]'});
+    state.refs.forEach(r => content1.push({type: 'image_url', image_url: {url: r.dataUrl}}));
+  }
+  if(!isFocal && state.compRefs && state.compRefs.length){
+    content1.push({type: 'text', text: '\n\n[구도 참고 이미지 — 이 이미지의 사물은 무시, 오직 흐름·배치·시각적 리듬만 분석에 반영]'});
+    state.compRefs.forEach(r => content1.push({type: 'image_url', image_url: {url: r.dataUrl}}));
+  }
+  if(state.styleRefs && state.styleRefs.length){
+    content1.push({type: 'text', text: '\n\n[🎨 스타일 참고 이미지 — 사물/구도 무시. 오직 채색감·붓 터치·표현 방식만 후보 디렉팅에 반영]'});
+    state.styleRefs.forEach(r => content1.push({type: 'image_url', image_url: {url: r.dataUrl}}));
+  }
+  
+  const res1 = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {'Authorization': `Bearer ${state.apiKey}`, 'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      model: 'gpt-4o',  // Heavy 모드 전용 상위 모델
+      messages: [{role: 'user', content: content1}],
+      max_tokens: 2500,
+      temperature: 0.7,
+      response_format: {type: 'json_object'}
+    })
+  });
+  if(!res1.ok){
+    const txt = await res1.text();
+    let errMsg = `Heavy 분석 실패 (${res1.status})`;
+    try {errMsg = JSON.parse(txt).error?.message || errMsg;} catch{}
+    throw new Error(errMsg);
+  }
+  const data1 = await res1.json();
+  const text1 = data1.choices?.[0]?.message?.content?.trim();
+  if(!text1) throw new Error('Heavy 분석 응답 없음');
+  
+  let analysisJson;
+  try { analysisJson = JSON.parse(text1); }
+  catch(e){ throw new Error('Heavy 분석 JSON 파싱 실패: ' + e.message); }
+  
+  console.log('[Heavy 1차 응답]', analysisJson);
+  
+  // ===== 2차 호출: 후보 평가 + 최종 압축 프롬프트 =====
+  progressCallback && progressCallback('후보 평가 + 최종 압축 프롬프트 생성 중...');
+  
+  let evalPrompt = HEAVY_EVALUATE_PROMPT
+    .replace('{CANDIDATES_JSON}', JSON.stringify(analysisJson, null, 2))
+    .replace('{MODE_LABEL}', modeLabel)
+    .replace('{INTENT_LABEL}', intentLabel)
+    .replaceAll('{WHITESPACE_PCT}', String(wsPct))
+    .replace('{EFFECTS_LABEL}', fxLabel);
+  
+  const res2 = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {'Authorization': `Bearer ${state.apiKey}`, 'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [{role: 'user', content: evalPrompt}],
+      max_tokens: 2500,
+      temperature: 0.5,
+      response_format: {type: 'json_object'}
+    })
+  });
+  if(!res2.ok){
+    const txt = await res2.text();
+    let errMsg = `Heavy 평가 실패 (${res2.status})`;
+    try {errMsg = JSON.parse(txt).error?.message || errMsg;} catch{}
+    throw new Error(errMsg);
+  }
+  const data2 = await res2.json();
+  const text2 = data2.choices?.[0]?.message?.content?.trim();
+  if(!text2) throw new Error('Heavy 평가 응답 없음');
+  
+  let evalJson;
+  try { evalJson = JSON.parse(text2); }
+  catch(e){ throw new Error('Heavy 평가 JSON 파싱 실패: ' + e.message); }
+  
+  console.log('[Heavy 2차 응답]', evalJson);
+  
+  if(!evalJson.final_prompt) throw new Error('Heavy 최종 프롬프트 누락');
+  
+  // 결과 통합 반환
+  return {
+    analysis: analysisJson,
+    evaluation: evalJson,
+    finalPrompt: evalJson.final_prompt,
+    selectedCandidateId: evalJson.selected
+  };
+}
+
+async function analyzeSubject(prompt, refs, composition, compRefs){
+  const hasCompRefs = compRefs && compRefs.length > 0;
+  const isFocal = state.tab === 'soyang';
+  
+  let fullPrompt;
+  if(isFocal){
+    // 주제부 연출 모드 분석 프롬프트
+    const tone = state.tone || 'dynamic';
+    const toneLabel = tone === 'dynamic' ? '동적 (움직임·흐름·변화)' : '정적 (균형·안정·명상)';
+    fullPrompt = `당신은 한국 미대 입시 기초디자인 강사입니다. 다음 두 소재로 '주제부 연출' 시안의 구성안을 작성해주세요. (전체 화면 구성이 아닌 주제부 중심, 개체 표현 시안)
+
+[제시 소재]
+${prompt || '자유주제'}
+
+[연출 흐름]
+${toneLabel}
+
+다음 항목을 모두 포함해 250~350자 자연스러운 한국어 단락으로 작성하세요 (불릿/번호 사용 금지):
+
+1. 두 소재의 관계성과 만나는 순간: 어떻게 어우러질지 (예: 가방에서 빨대 케이스가 빠져나오는 순간)
+2. 각 소재의 축 방향: 한 소재의 사선 축과 다른 소재의 교차 축을 어떻게 충돌·교차시킬지 (서로 다른 방향으로 배치)
+3. ${tone === 'dynamic' ? '동적 표현: 열림·휘어짐·빠져나옴·떨어짐 등 어떤 움직임의 순간을 포착할지' : '정적 표현: 어떤 차분한 균형감과 안정적 배치로 명상적 분위기를 만들지'}
+4. 핵심 디테일과 질감: 각 소재의 어떤 특징적 요소(박음질·금속·결·반사·굴절 등)를 강조할지
+5. 깊이감: 어느 부분이 앞으로 튀어나오고 어느 부분이 뒤로 물러나는지 (근경·중경·원경)
+6. 주제부 강조: 시선이 모이는 지점을 어떻게 구성할지
+
+중요:
+- 제시 소재만 사용. 추가 사물 절대 추가 금지.
+- 전체 화면을 가득 채우지 않고, 주제부에 집중하는 개체 표현 시안.
+- 정적 제품사진처럼 보이지 않게, 회화적이고 표현적으로.
+- 다른 설명·제목·인사 없이 구성안 단락만 답변.`;
+  } else {
+    // 기초디자인 모드 분석 프롬프트
+    fullPrompt = SUBJECT_ANALYSIS_PROMPT
+      .replace('{PROMPT}', prompt || '자유주제')
+      .replace('{COMPOSITION}', composition || '(텍스트 미지정' + (hasCompRefs ? ' - 첨부된 구도 참고 이미지에서 흐름·배치 방식을 분석해 적용' : ' - 소재에 맞춰 추천') + ')');
+  }
+  
+  const content = [{type: 'text', text: fullPrompt}];
+  
+  // 사물 참고 이미지
+  if(refs.length > 0){
+    content.push({type: 'text', text: '\n\n[그릴 사물의 참고 이미지]'});
+    refs.forEach(r => {
+      content.push({type: 'image_url', image_url: {url: r.dataUrl}});
+    });
+  }
+  
+  // 구도 참고 이미지 (기초디자인에만)
+  if(hasCompRefs && !isFocal){
+    content.push({type: 'text', text: '\n\n[적용할 구도 참고 이미지 — 이 이미지의 사물은 무시하고, 오직 화면 흐름·배치 구성·시각적 리듬만 분석해서 우리 작품에 적용]'});
+    compRefs.forEach(r => {
+      content.push({type: 'image_url', image_url: {url: r.dataUrl}});
+    });
+    content.push({type: 'text', text: '\n위 구도 이미지의 흐름·시선 이동·사물 배치 패턴을 정확히 파악하고, 그 구도를 우리 소재에 어떻게 적용할지 분석 단락에 반드시 포함시킬 것.'});
+  }
+  
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${state.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [{role: 'user', content}],
+      max_tokens: 700,
+      temperature: 0.7
+    })
+  });
+  
+  if(!res.ok){
+    const txt = await res.text();
+    let errMsg = `분석 실패 (${res.status})`;
+    try {errMsg = JSON.parse(txt).error?.message || errMsg;} catch{}
+    throw new Error(errMsg);
+  }
+  
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content?.trim();
+  if(!text) throw new Error('분석 결과를 받지 못했습니다');
+  return text;
+}
+
+// ============ 주제부 연출 (개체 표현) 프롬프트 — 통제 강화판 ============
+const SOYANG_PROMPT = `한국 미대 입시 기초디자인의 '주제부 연출' 시안 이미지를 생성해주세요. (개체 표현 중심)
+
+{EXAM_INFO}[메인 소재 — 화면의 주축, 전체 형태 명확히 보일 것]
+{PROMPT}
+
+[보조 소재 — 모두 화면에 등장. 메인과의 관계성 표현]
+{SUPPORT_SUBJECTS}
+
+[연출 흐름]
+{TONE}
+
+[결과물 성격]
+{INTENT}
+
+★★★ 절대 규칙 — 반드시 지킬 것 ★★★
+1) 제시 소재만 사용. 추가 사물·요소·장식 절대 금지.
+2) 전체 구성화면이 아닌, 메인 소재 + 보조 소재의 관계성을 보여주는 주제부 중심 시안.
+3) 보조 소재가 나열되어 있다면 **모두** 화면에 등장. 누락 금지.
+4) 화면의 {WHITESPACE_PCT}% 이상은 깨끗한 흰 여백. 주제부에 시선이 모이도록 여백 활용.
+5) 개체 표현에 가깝게 — 각 소재의 형태·재질·디테일이 중심.
+6) 모든 요소가 비슷한 강도로 보이지 않게 한다 — 메인이 가장 명확히.
+
+[여백 제어]
+- 화면의 {WHITESPACE_PCT}% 이상은 깨끗한 흰 여백으로 남긴다.
+- 주제부는 중앙 또는 황금분할 위치에 집중 배치하고, 주변은 비운다.
+- 배경 없이 흰 화지에 사물이 떠 있는 듯한 공간감 유지.
+
+[소재 관계성]
+- 두 소재가 만나는 한 장면 — 빠져나오거나, 겹치거나, 꿰뚫는 순간 포착
+- 단순 정물 나열이 아닌, 회화적이고 표현적인 입시 시범작 톤
+- 같은 소재의 불필요한 반복 금지 — 각 소재는 1개씩이 원칙, 필요시 보조 1개까지만
+
+[축의 대비]
+- 한 소재는 한 방향의 큰 사선 축, 다른 소재는 그것과 교차하는 다른 축
+- 두 소재의 축이 만나는 지점에 시선 집중
+- 축 대비로 시각적 긴장감 형성
+
+[필수 디테일]
+- 각 소재의 고유 질감이 정확히 살아있음 (가죽·금속·유리·나무·천 등)
+- 박음질, 단추, 금속 장식, 나무 결, 투명체 반사·겹침·굴절 같은 특징적 디테일 표현
+- 형태력은 사실적으로, 디테일은 정확하게
+
+[깊이감]
+- 일부 요소는 앞으로 튀어나오고 일부는 뒤로 물러나는 겹침
+- 앞쪽은 선명·채도 높게, 뒤로 갈수록 부드럽고 흐릿
+- 화이트 배경, 바닥·테이블·그림자 없음, 공중 부유감
+
+[배경 — 절대 흰 화지만 사용 (매우 중요)]
+- 배경은 오직 깨끗한 흰 화지(순백색 #ffffff)만 사용한다.
+- 나무·숲·산·언덕·들판·하늘·구름·도시·건물·집·길·강·바다·해변·지평선·지면·바닥선 같은 풍경 요소를 일체 그리지 말 것.
+- 흐릿한 수채화풍 풍경·산수화 톤·환경 묘사·실루엣·먼 풍경도 금지.
+- 소재 뒤에 어떤 장면이나 환경도 그리지 말 것 — 모든 소재는 흰 화지 위에 떠 있는 한 장면.
+
+[화면 모서리 규칙 — 답답함 방지]
+- 화면의 네 꼭짓점(좌상·우상·좌하·우하) 중 **최대 2곳만** 소재나 효과로 가릴 것.
+- 나머지 **2곳 이상의 꼭짓점은 반드시 깨끗한 흰 여백** 상태로 유지.
+- 모서리 여백은 화면의 호흡과 시선 집중을 만드는 핵심.
+
+[물줄기·선형 효과 사용 기준]
+{EFFECTS_RULE}
+
+[연출 흐름 표현]
+{TONE_DETAIL}
+
+[입시 기초디자인 느낌 강화]
+- 단순한 제품사진이나 게임 콘셉트 아트처럼 보이지 않게 한다.
+- 실제 입시 실기실에서 그린 주제부 시범작처럼 보이게 한다.
+- 화려한 효과보다 소재의 구조와 재질감이 먼저 보여야 한다.
+- 마카, 수채, 과슈, 색연필이 섞인 손그림 입시 실기 표현으로 보이게 한다.
+
+[규격]
+- 4:3 비율 (가로형)
+- 손그림 + 마카·포스터칼라·색연필 혼합매체 채색
+- 화지 종이 질감
+- 디지털 합성·3D 렌더링 톤 배제, 입시 실기실 손그림 시범작 스타일
+
+[절대 금지]
+- 글자, 로고, 워터마크, 숫자, 라벨 일체 금지
+- 바닥, 테이블, 그림자 금지
+- ❌ 배경에 나무·숲·산·풍경·하늘·구름·건물 등 환경 요소 금지 (오로지 흰 화지만)
+- ❌ 흐릿한 수채 풍경·산수화·먼 실루엣 배경도 금지
+- ❌ 4개 모서리 모두를 소재로 가리는 답답한 구성 금지 (최소 2개 모서리는 흰 여백)
+- 사진·3D 렌더링 톤 금지
+- 화면을 가득 채워서 여백이 사라지는 구성 금지
+- 같은 소재가 불필요하게 반복되는 구성 금지
+- 효과(물줄기·파편·튐)가 주제 소재보다 더 강하게 보이는 구성 금지{REF_PART}`;
+
+// ============ 소재 자료조사 (대표 + 다양한 각도) 프롬프트 ============
+const RESEARCH_PROMPT = `Reference sheet for an art student studying a specific object. Photorealistic / high-quality 3D render style.
+
+[Subject — the ONE object to research]
+{PROMPT}
+
+[Layout — CRITICAL]
+A single square canvas (1:1) divided into a clean grid showing the SAME object from multiple viewpoints:
+- ONE large hero image (center or top, occupying the biggest cell) showing the object from its most characteristic 3/4 angle
+- EIGHT smaller grid cells around the hero image, each showing a different view of the EXACT SAME object:
+  1. Front view (straight-on, flat orthographic — for form study)
+  2. Side view (profile, flat orthographic — for form study)
+  3. DRAMATIC LOW-ANGLE 3-POINT PERSPECTIVE (worm's-eye view): camera placed very low looking up, shot as if with an ultra-wide lens. Strong exaggerated foreshortening (과투시) — the near end of the object looms large and the far end shrinks sharply, vertical edges visibly converging upward toward a high vanishing point. Dynamic diagonal placement. This is the dramatic dimensional reference.
+  4. Top-down view (flat orthographic — for form study)
+  5. DRAMATIC HIGH-ANGLE 3-POINT PERSPECTIVE (bird's-eye / 부감 view): camera placed high looking down, ultra-wide lens. Strong exaggerated foreshortening (과투시) — near part large, far part shrinking sharply, vertical edges converging downward toward a low vanishing point. Bold diagonal placement. Second dramatic dimensional reference.
+  6. Three-quarter front view (from a raised angle)
+  7. Three-quarter back view (from a lowered angle)
+  8. Close-up detail shot (showing texture, parts, mechanism)
+
+[Perspective note — cells 3 and 5]
+- Cells 3 and 5 use EXAGGERATED 3-point perspective (과투시) on purpose — strong wide-angle foreshortening and converging verticals, like Korean art-exam basic-design references.
+- CRITICAL: only the PERSPECTIVE is exaggerated (foreshortening + converging lines). The object's actual proportions, form, and structure must stay ACCURATE and consistent with the other cells — do NOT melt, bend, or warp the object itself.
+
+[Visual rules — strictly enforced]
+- The object MUST be identical across ALL views (same color, same model, same materials, same details). No variations, no color changes, no different products.
+- Plain pale neutral background (light gray #f0f0f0 or pure white) — same background in every cell.
+- Soft even studio lighting, minimal shadow, no harsh reflections.
+- Each cell separated by thin light gray dividers OR by clean white gutters.
+- The object centered within its own cell, sized so the full silhouette is visible (not cropped except the close-up detail).
+- Photorealistic OR clean 3D product-render style. No painting, no illustration, no sketch.
+
+[Strict prohibitions]
+- NO text, labels, numbers, arrows, watermarks, dimensions, captions of any kind anywhere in the image.
+- NO variation in object color, finish, or design between cells.
+- NO complex background, environment, scenery, or props.
+- NO hand-drawn or painterly look.
+- NO heavy dramatic lighting or moody shadows.
+
+[Purpose]
+This is a study reference sheet for an art student preparing to draw {PROMPT}. The student needs to see exactly what the object looks like from every angle in clean photo-reference style.{REF_PART}`;
+
+
+// 연출 흐름 디테일
+const TONE_DETAILS = {
+  dynamic: '동적인 흐름 — 가방·케이스가 열리고, 빨대·도구가 빠져나오거나 떨어지거나 휘어지는 순간을 포착. 운동감과 변화의 한순간. 정적인 제품사진처럼 보이지 않게.',
+  static: '정적인 균형 — 차분하고 안정적인 배치. 명상적이고 절제된 분위기. 소재끼리 균형감 있게 자리 잡힌 한 장면. 시간이 멈춘 듯한 정제된 느낌.'
+};
+
+// ============ 통제 옵션 텍스트 ============
+const INTENT_TEXT = {
+  balsang: `발상용 레퍼런스 — 학생에게 소재 활용 아이디어를 보여주는 용도. 다양한 시도와 가능성을 시각화하되, 가독성과 주제부 강조는 유지한다. 정식 입시 완성작보다는 가볍게.`,
+  sibumjak: `입시 실기 시범작 — 학원에서 학생에게 보여주는 정식 완성작 톤. 형태력·재질감·구도·공간감 모두 완성도 높게. 화려함보다 통제와 정돈을 우선한다. 입시 우수작 기준의 완성도.`,
+  seolmyeong: `학생 설명용 자료 — 구도·구성·주제부 배치를 명확히 보여주기 위한 용도. 효과보다 구조가 먼저 보이게 한다. 깔끔하고 분석적인 톤, 시각적 위계가 분명할 것.`
+};
+
+const WHITESPACE_PCT = {
+  less: 20,
+  normal: 30,
+  more: 40
+};
+
+const EFFECTS_TEXT = {
+  none: `물줄기, 액체 튐, 파편, 끈, 철사, 선형 효과를 일체 사용하지 않는다. 소재 자체의 형태력과 재질로만 표현한다. 깨끗하고 정돈된 화면.`,
+  low: `물줄기·액체·선형 효과는 필요할 때만 최소한으로 사용한다.
+- 큰 흐름은 1개, 보조 흐름은 1~2개 정도로 제한한다.
+- 주제 소재를 가리거나 화면을 장악하지 않게 한다.
+- 물방울·튐·파편은 과하게 뿌리지 않고 필요한 부분에만 사용한다.
+- 효과보다 소재가 먼저 보여야 한다.`,
+  high: `물줄기·액체·선형 효과를 적극 사용하되 통제된 범위로:
+- 큰 흐름은 1~2개, 보조 흐름은 2~3개까지 허용한다.
+- 효과는 구도와 시선 이동을 만드는 역할로 사용한다.
+- 강하게 사용하더라도 주제 소재를 가리지 않게 한다.
+- 물방울·튐·파편은 화면 균형을 무너뜨리지 않는 범위에서만.`
+};
+
+
+// ============ 사진 분석 프롬프트 ============
+const ANALYZE_PROMPT_GIDI = `이 사진에 나오는 사물을 정확히 식별하고, 한국 미대 입시 기초디자인 작품의 제시어로 사용할 짧은 문구를 만들어주세요.
+
+매우 중요:
+- 사진 속 실제 사물을 정확한 이름으로 식별 (페인트 롤러는 "롤러", 라디오는 "라디오" 등)
+- 추측하거나 일반화하지 말 것 (예: 롤러를 "물감"으로 변환 ✗)
+- 사진에 없는 사물 추가 ✗
+
+조건:
+- 30자 이내
+- 자연스러운 한국어
+- 사진 속 사물들을 "A와 B" 또는 "A, B, C" 형태로 명확히 나열
+- 다른 설명·따옴표·기호 없이 제시어 문구만 답변
+
+예시 답변 (사물 이름만 정확히 나열):
+라디오와 롤러
+사과와 유리병
+시계와 책`;
+
+const ANALYZE_PROMPT_SOYANG = `이 사진에 나오는 사물을 정확히 식별해서, 한국 미대 입시 '주제부 연출' 시안의 제시 소재로 사용할 짧은 문구를 만들어주세요.
+
+매우 중요:
+- 사진 속 실제 사물을 정확한 이름으로 식별
+- 추측하거나 일반화하지 말 것
+- 사진에 없는 사물 추가 ✗
+
+조건:
+- 30자 이내
+- 자연스러운 한국어
+- 사진 속 소재들을 "A와 B" 또는 "A, B, C" 형태로 명확히 나열
+- 다른 설명·따옴표·기호 없이 제시 소재 문구만 답변
+
+예시: 가죽 가방과 빨대 케이스
+예시: 빈티지 타자기와 안경
+예시: 만년필과 잉크병`;
+
+const ANALYZE_PROMPT_RESEARCH = `이 사진에 나오는 사물을 정확히 식별해서, 한국 미대 입시 '소재 자료조사' 레퍼런스의 제시 소재로 사용할 짧은 문구를 만들어주세요.
+
+매우 중요:
+- 사진 속 실제 사물을 정확한 이름으로 식별
+- 추측하거나 일반화하지 말 것
+- 보통 하나의 핵심 소재만 (자료조사는 한 소재의 다각도 분석이므로)
+
+조건:
+- 15자 이내
+- 자연스러운 한국어
+- 다른 설명·따옴표·기호 없이 소재 이름만 답변
+
+예시: 빈티지 라디오
+예시: 가스 버너
+예시: 색소폰
+예시: 다이얼 전화기`;
+
+// ============ 시험지 사진 분석 프롬프트 ============
+const ANALYZE_PROMPT_EXAM = `당신은 한국 미대 입시 기초디자인 전문 강사이자 입시 디렉터입니다. 첨부된 이미지는 미대 입시 시험지(문제지)입니다.
+
+이미지에서 다음 정보를 정확히 추출하고, ★ 가장 중요하게 제시어를 시각적으로 해석해주세요 ★.
+
+1) 대학 이름 (예: 이화여대, 홍익대, 국민대, 건국대, 중앙대, 서경대 등)
+2) 절지/규격/방향 (예: "2절 가로", "4절 세로", "3절 4시간" 등)
+3) 시험 문제 본문 (있다면 그대로)
+4) 메인 소재 (보통 큰 이미지로 제시되는 핵심 사물 — 1개)
+5) 보조 소재 목록 (그리드/나열로 제시되는 여러 사물 — 빠짐없이 모두 정확히)
+6) 제시어 / 주제 키워드 (예: "교차", "리듬감과 운동감", "균형", "웰빙 라이프", "조형의 균형" 등)
+7) ★★★ 제시어 시각 해석 (theme_interpretation) — 매우 중요 ★★★
+   제시어를 단순한 단어가 아니라, 실제 화면에서 어떻게 풀어낼지 구체적으로 해석합니다.
+   - 두 소재가 어떻게 관계 맺어야 하는지 (충돌·교차·겹침·감김·통과·균형 등)
+   - 어떤 구도가 어울리는지 (사선·교차·S자·방사형·균형·비대칭 등)
+   - 어떤 동세·흐름이 필요한지 (정적·동적·확산·집중·회전 등)
+   - 어떤 시각적 강조점이 핵심인지
+   예시:
+     · 제시어 "교차" + 브로콜리·노끈 → "노끈이 브로콜리 줄기를 X자로 가로질러 묶거나 통과하는 구성. 두 소재가 만나는 교차점이 화면 주제부. 사선 흐름이 핵심."
+     · 제시어 "웰빙 라이프" + 운동화·줄자·저울 → "운동의 동세(운동화 착지) + 측정의 균형(저울+줄자)이 결합. 줄자가 운동화를 감으며 저울로 흐르는 사선 동선."
+     · 제시어 "리듬감과 운동감" + 요요·실 → "요요가 회전하며 실이 연속적인 곡선으로 흐르는 리드미컬한 흐름. 반복과 가속이 핵심."
+8) 최종 목표 (예: "운송기기 디자인", "공간 디자인", "조형 표현" 등)
+9) 표현 형식 힌트 (예: "평면적으로 표현", "입체감 살려서", "디자인 제안", "자유롭게 구성" 등)
+
+매우 중요:
+- 보조 소재는 보이는 모든 사물을 빠짐없이 한국어 명사로 (예: "철사", "정육면체", "체인", "스프링", "톱니바퀴", "프로펠러", "자전거 체인", "U볼트", "쇠구슬")
+- 보조 소재 이름은 짧고 명확하게 (수식어 최소화)
+- 추측하지 말고 이미지에 명확히 보이는 것만
+- 제시어 해석(theme_interpretation)은 반드시 채울 것. 제시어가 단순해 보여도 시각적 표현 방향을 구체화하세요.
+- 불확실한 항목은 빈 값/빈 배열로 둘 것
+
+응답 형식 — 반드시 다음 JSON만 출력. 코드블록·설명·따옴표 마크 없이 JSON만:
+{
+  "university": "대학명 또는 빈 문자열",
+  "paper_size": "절지/방향 또는 빈 문자열",
+  "question1": "문제1 본문 또는 빈 문자열",
+  "main_subject": "메인 소재 (한 줄, 15자 이내)",
+  "question2": "문제2 본문 또는 빈 문자열",
+  "support_subjects": ["보조 소재 배열"],
+  "theme_keywords": ["주제 키워드 배열"],
+  "theme": "제시어 한 줄 요약",
+  "theme_interpretation": "★ 제시어를 시각적으로 어떻게 풀어낼지 구체 해석 (3~5문장, 가장 중요)",
+  "final_goal": "최종 목표 (디자인할 대상)",
+  "format_hint": "표현 형식 힌트"
+}`;
+
+function setAnalyzeMode(mode){
+  state.analyzeMode = mode;
+  saveSession();
+  document.getElementById('analyzeModeSubject').classList.toggle('active', mode === 'subject');
+  document.getElementById('analyzeModeExam').classList.toggle('active', mode === 'exam');
+  const btnText = document.getElementById('analyzeBtnText');
+  if(btnText){
+    btnText.textContent = mode === 'exam' 
+      ? '시험지 분석 → 메인·보조 소재 자동 입력' 
+      : '사진 분석 → 제시어 자동 생성';
+  }
+}
+
+
+// ============ Heavy 디렉팅: 1차 호출 — 깊은 분석 + 구성 후보 3안 ============
+const HEAVY_ANALYZE_GIDI = `너는 한국 미대 입시 기초디자인 전문 강사이자 입시 디렉터다. 
+주어진 소재를 보고 학생에게 입시 시범작 수준의 참고 이미지를 만들어주기 위한 디렉팅을 한다.
+
+{EXAM_INFO_HEAVY}[메인 소재 — 화면 주제부]
+{PROMPT}
+
+[보조 소재 — 모두 화면에 등장해야 함]
+{SUPPORT_SUBJECTS}
+
+[지정 구도]
+{COMPOSITION}
+
+[통제 옵션]
+- 결과물 성격: {INTENT_LABEL}
+- 여백 목표: {WHITESPACE_PCT}%
+- 효과 사용 강도: {EFFECTS_LABEL}
+
+너의 임무:
+1) 소재를 입시 강사 시각으로 깊이 분석한다 (형태·재질·리듬·확대 디테일·전체형 필수 여부·왜곡 가능 부분·주의점).
+2) 그 분석을 바탕으로 서로 다른 구성 후보 3개 (A안, B안, C안)를 만든다.
+   - 각 후보는 구도 흐름·주제부 위치·근경/중경/원경 배치·여백 위치·시선 이동·효과 사용 여부·장점·위험요소를 포함한다.
+   - 3개 후보는 서로 충분히 달라야 한다 (예: 사선 / 방사형 / S자흐름 등).
+3) 모든 후보는 통제 옵션(여백, 효과)을 반드시 지킬 것.
+4) 모든 후보는 다음 절대 규칙을 따를 것:
+   - 배경에 나무·숲·산·풍경·하늘·도시·건물 등 환경 요소를 절대 그리지 않음 (오로지 흰 화지 배경)
+   - 화면의 네 꼭짓점(좌상·우상·좌하·우하) 중 최대 2곳만 가리고, 2곳 이상은 흰 여백 유지
+
+응답 형식 — 반드시 다음 JSON만 출력. 다른 설명·코드블록·따옴표 마크 일체 금지:
+{
+  "main_subject": "중심 소재 (한 문장)",
+  "support_subjects": ["보조 소재들"],
+  "material_features": ["재질 특징 3~5개"],
+  "form_rhythm": ["형태 리듬·방향성 2~3개"],
+  "must_show_whole_form": "전체형이 반드시 보여야 하는 소재 부위 설명",
+  "risk_points": ["기초디자인에서 조심할 점 2~3개"],
+  "candidates": [
+    {
+      "id": "A",
+      "name": "구도 이름 (예: 강한 사선 구도)",
+      "main_subject_placement": "중심 소재 위치/크기/방향",
+      "near_treatment": "근경 처리",
+      "mid_treatment": "중경 처리",
+      "far_treatment": "원경 처리",
+      "whitespace_position": "여백을 화면 어디에 둘지",
+      "eye_movement": "시선 이동 방향",
+      "effects_use": "물줄기/선형 효과 사용 여부와 양",
+      "strengths": ["장점 2개"],
+      "risks": ["위험 요소 1~2개"]
+    },
+    {"id": "B", ...같은 구조...},
+    {"id": "C", ...같은 구조...}
+  ]
+}`;
+
+const HEAVY_ANALYZE_SOYANG = `너는 한국 미대 입시 기초디자인 주제부 연출(개체 표현) 전문 강사이자 입시 디렉터다.
+주어진 소재의 관계성을 보여주는 주제부 시안 디렉팅을 한다.
+
+{EXAM_INFO_HEAVY}[메인 소재]
+{PROMPT}
+
+[보조 소재 — 모두 화면에 등장]
+{SUPPORT_SUBJECTS}
+
+[연출 흐름]
+{TONE_LABEL}
+
+[통제 옵션]
+- 결과물 성격: {INTENT_LABEL}
+- 여백 목표: {WHITESPACE_PCT}%
+- 효과 사용 강도: {EFFECTS_LABEL}
+
+너의 임무:
+1) 소재를 깊이 분석한다 (각 소재의 형태·재질·특징적 디테일·축 방향).
+2) 두 소재의 관계성을 보여주는 주제부 시안 후보 3개를 만든다.
+   - 각 후보는 두 소재의 만남 방식·축 대비·디테일 강조·여백 활용·연출 흐름 표현이 서로 달라야 한다.
+3) 모든 후보는 통제 옵션(여백, 효과)을 반드시 지킬 것.
+4) 모든 후보는 다음 절대 규칙을 따를 것:
+   - 배경에 나무·숲·산·풍경·하늘·도시·건물 등 환경 요소를 절대 그리지 않음 (오로지 흰 화지 배경)
+   - 화면의 네 꼭짓점(좌상·우상·좌하·우하) 중 최대 2곳만 가리고, 2곳 이상은 흰 여백 유지
+
+응답 형식 — 반드시 다음 JSON만 출력. 다른 설명·코드블록·따옴표 마크 일체 금지:
+{
+  "main_subject": "주축 소재",
+  "support_subjects": ["보조 소재들"],
+  "material_features": ["재질 특징 3~5개"],
+  "detail_emphasis": ["디테일 강조점 2~4개"],
+  "risk_points": ["주제부 연출에서 조심할 점 2~3개"],
+  "candidates": [
+    {
+      "id": "A",
+      "name": "주제부 연출 이름",
+      "encounter_type": "두 소재가 만나는 방식 (빠져나옴/겹침/꿰뚫음 등)",
+      "axis_contrast": "축 대비 설명",
+      "main_focus": "시선이 모이는 중심 위치",
+      "whitespace_position": "여백 배치",
+      "detail_priority": "어떤 디테일을 우선 보여줄지",
+      "effects_use": "효과 사용 여부",
+      "strengths": ["장점 2개"],
+      "risks": ["위험 요소 1~2개"]
+    },
+    {"id": "B", ...},
+    {"id": "C", ...}
+  ]
+}`;
+
+// ============ Heavy 디렉팅: 2차 호출 — 후보 평가 + 최종 압축 ============
+const HEAVY_EVALUATE_PROMPT = `너는 한국 미대 입시 기초디자인 디렉터다. 
+방금 생성된 후보 3개를 입시 기초디자인 시범작 기준으로 평가하고, 가장 좋은 안을 선택해서 이미지 생성용 최종 프롬프트를 만든다.
+
+[원본 분석 + 후보 3안]
+{CANDIDATES_JSON}
+
+[모드] {MODE_LABEL}
+[결과물 성격] {INTENT_LABEL}
+[여백 목표] {WHITESPACE_PCT}%
+[효과 강도] {EFFECTS_LABEL}
+
+평가 기준 (각 항목 0~10점, 합 100점 만점):
+1. 주제부 명확성 (10)
+2. 중심 소재 전체형 가독성 (10)
+3. 여백 확보 — {WHITESPACE_PCT}% 목표 부합 (10)
+4. 소재 반복 통제 (10)
+5. 근경·중경·원경 분명함 (10)
+6. 재질감 표현 가능성 (10)
+7. 효과가 소재보다 튀지 않을 가능성 (10)
+8. 실제 입시 시범작 다움 (10)
+9. 판타지/게임 콘셉트 아트 빠질 위험 회피 (5)
+10. **모서리 여백 유지** — 4개 꼭짓점 중 2개 이상이 흰 여백으로 남는 구성인가 (10)
+11. **흰 배경 유지** — 풍경·환경·건물 등이 들어가지 않을 구성인가 (5)
+12. 결과물 성격 부합 (5)
+
+응답 형식 — 반드시 다음 JSON만 출력. 다른 설명·코드블록·따옴표 마크 일체 금지:
+{
+  "evaluations": [
+    {"id": "A", "score": 0~100, "reason": "한 줄 평가"},
+    {"id": "B", "score": 0~100, "reason": "한 줄 평가"},
+    {"id": "C", "score": 0~100, "reason": "한 줄 평가"}
+  ],
+  "selected": "A 또는 B 또는 C",
+  "selection_reason": "왜 이걸 선택했는지 2~3줄",
+  "final_prompt": "이미지 생성 모델에 들어갈 최종 압축 프롬프트 (한국어, 약 500~700자). 반드시 다음 구조: [목표] [소재] [최종 구도] [주제부] [근경] [중경] [원경] [여백] [모서리 규칙] [배경] [재질] [스타일] [금지]. 각 섹션은 1~3문장으로 핵심만. 손그림 입시 기초디자인 시범작 스타일임을 명확히. 반드시 포함할 금지사항: 글자/로고/숫자/워터마크 금지, 화면 가득 채우기 금지, 효과가 주제 소재보다 튀지 않게, **배경에 나무·산·풍경·건물 등 환경 요소 일체 금지 (흰 화지만)**, **4개 모서리 중 2개 이상은 흰 여백으로 유지 (4개 다 가리는 답답한 구성 금지)**."
+}`;
+
+
+
+// ============ 빠른 키워드 ============
+const TIPS_GIDI = [
+  ['아침/햇살','아침과 햇살, 창가의 책상'],
+  ['시간','바다와 모래시계, 시간의 흐름'],
+  ['도시','도시의 새벽, 골목길'],
+  ['대조','자연과 기계, 식물과 톱니바퀴'],
+  ['계절','계절의 변화, 사계']
+];
+const TIPS_SOYANG = [
+  ['가방·도구','가죽 가방과 빨대 케이스'],
+  ['책상물','타자기와 안경'],
+  ['도구','만년필과 잉크병'],
+  ['주방','드립포트와 커피잔'],
+  ['빛','전등과 책']
+];
+const TIPS_RESEARCH = [
+  ['가전','빈티지 라디오'],
+  ['도구','전동 드릴'],
+  ['주방','가스 버너'],
+  ['악기','색소폰'],
+  ['생활','다이얼 전화기']
+];
+
+// ============ 초기화 ============
+const STORAGE_KEY = 'hi5_openai_api_key_v1';
+
+window.addEventListener('DOMContentLoaded', () => {
+  // localStorage에서 API 키 자동 로드
+  let savedKey = null;
+  try { savedKey = localStorage.getItem(STORAGE_KEY); } catch(e){}
+  
+  // 이전 Gemini 키가 있으면 삭제 안내
+  try {
+    if(localStorage.getItem('hi5_gemini_api_key_v1')){
+      localStorage.removeItem('hi5_gemini_api_key_v1');
+    }
+  } catch(e){}
+  
+  if(savedKey){
+    document.getElementById('apiKey').value = savedKey;
+    state.apiKey = savedKey;
+    updateApiStatus(true);
+  } else {
+    updateApiStatus(false);
+  }
+  
+  renderTips();
+  
+  document.getElementById('promptText').addEventListener('input', e => {
+    state.prompt = e.target.value;
+    updatePromptCharCount();
+    saveSession();
+  });
+  document.getElementById('supportSubjectsText').addEventListener('input', e => {
+    state.supportSubjects = e.target.value;
+    updatePromptCharCount();
+    saveSession();
+  });
+  
+  // 구도 입력
+  document.getElementById('compositionText').addEventListener('input', e => {
+    state.composition = e.target.value;
+    saveSession();
+  });
+  
+  // 구도 빠른 칩
+  document.querySelectorAll('#compChips .tip-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = chip.dataset.comp;
+      document.getElementById('compositionText').value = val;
+      state.composition = val;
+    });
+  });
+  
+  document.getElementById('refUpload').addEventListener('change', handleFiles);
+  document.getElementById('compRefUpload').addEventListener('change', handleCompFiles);
+  document.getElementById('styleRefUpload').addEventListener('change', handleStyleFiles);
+  
+  // 사물 참고 dropzone
+  const dz = document.getElementById('dropzone');
+  dz.addEventListener('click', () => { state.activeDropzone = 'refs'; updateActiveDropzoneUI(); });
+  dz.addEventListener('mouseenter', () => { state.activeDropzone = 'refs'; updateActiveDropzoneUI(); });
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault(); dz.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => {
+    e.preventDefault(); dz.classList.remove('drag');
+  }));
+  dz.addEventListener('drop', e => {
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    handleFiles({target:{files}});
+  });
+  
+  // 구도 참고 dropzone
+  const cdz = document.getElementById('compDropzone');
+  cdz.addEventListener('click', () => { state.activeDropzone = 'comp'; updateActiveDropzoneUI(); });
+  cdz.addEventListener('mouseenter', () => { state.activeDropzone = 'comp'; updateActiveDropzoneUI(); });
+  ['dragenter','dragover'].forEach(ev => cdz.addEventListener(ev, e => {
+    e.preventDefault(); cdz.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(ev => cdz.addEventListener(ev, e => {
+    e.preventDefault(); cdz.classList.remove('drag');
+  }));
+  cdz.addEventListener('drop', e => {
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    handleCompFiles({target:{files}});
+  });
+  
+  // 스타일 참고 dropzone
+  const sdz = document.getElementById('styleDropzone');
+  sdz.addEventListener('click', () => { state.activeDropzone = 'style'; updateActiveDropzoneUI(); });
+  sdz.addEventListener('mouseenter', () => { state.activeDropzone = 'style'; updateActiveDropzoneUI(); });
+  ['dragenter','dragover'].forEach(ev => sdz.addEventListener(ev, e => {
+    e.preventDefault(); sdz.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(ev => sdz.addEventListener(ev, e => {
+    e.preventDefault(); sdz.classList.remove('drag');
+  }));
+  sdz.addEventListener('drop', e => {
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    handleStyleFiles({target:{files}});
+  });
+  
+  updateActiveDropzoneUI();
+
+  // ===== 클립보드 붙여넣기 (Ctrl+V) =====
+  document.addEventListener('paste', async (e) => {
+    if(document.getElementById('lightbox').classList.contains('show')) return;
+    
+    const items = e.clipboardData?.items;
+    if(!items) return;
+    
+    const imageFiles = [];
+    for(const item of items){
+      if(item.type.startsWith('image/')){
+        const file = item.getAsFile();
+        if(file) imageFiles.push(file);
+      }
+    }
+    
+    if(imageFiles.length === 0) return;
+    e.preventDefault();
+    
+    // 활성 dropzone에 따라 3-way 분기
+    const zone = state.activeDropzone;  // 'refs' | 'comp' | 'style'
+    const config = {
+      refs:  {max: 3,  count: state.refs.length,       name: '사물 참고',     dz: 'dropzone',      handler: handleFiles},
+      comp:  {max: 2,  count: state.compRefs.length,   name: '구도 참고',     dz: 'compDropzone',  handler: handleCompFiles},
+      style: {max: 10, count: state.styleRefs.length,  name: '🎨 스타일 참고', dz: 'styleDropzone', handler: handleStyleFiles}
+    };
+    const cfg = config[zone] || config.refs;
+    
+    if(cfg.count >= cfg.max){
+      toast(`${cfg.name} 이미지는 최대 ${cfg.max}장까지 가능합니다`);
+      return;
+    }
+    
+    const remaining = cfg.max - cfg.count;
+    const toAdd = imageFiles.slice(0, remaining);
+    
+    if(imageFiles.length > remaining){
+      toast(`${remaining}장만 추가됩니다`);
+    }
+    
+    const targetDz = document.getElementById(cfg.dz);
+    if(targetDz){
+      targetDz.classList.add('drag');
+      setTimeout(() => targetDz.classList.remove('drag'), 600);
+    }
+    
+    cfg.handler({target:{files: toAdd}});
+    toast(`📋 ${cfg.name} ${toAdd.length}장 붙여넣기`);
+  });
+
+  // 비율 (가로/세로/정사각)
+  document.querySelectorAll('#ratioRow .count-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#ratioRow .count-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.aspectRatio = chip.dataset.ratio;
+      saveSession();
+    });
+  });
+  
+  document.querySelectorAll('#countRow .count-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#countRow .count-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.count = parseInt(chip.dataset.count);
+      saveSession();
+    });
+  });
+
+  document.querySelectorAll('#qualityRow .count-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#qualityRow .count-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.quality = chip.dataset.quality;
+      saveSession();
+    });
+  });
+
+  // 톤(정적/동적) 칩
+  document.querySelectorAll('#toneRow .count-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#toneRow .count-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.tone = chip.dataset.tone;
+      saveSession();
+    });
+  });
+
+  // ===== 통제 옵션 칩 =====
+  document.querySelectorAll('#intentRow .count-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#intentRow .count-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.intent = chip.dataset.intent;
+      saveSession();
+    });
+  });
+  document.querySelectorAll('#whitespaceRow .count-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#whitespaceRow .count-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.whitespace = chip.dataset.ws;
+      saveSession();
+    });
+  });
+  document.querySelectorAll('#effectsRow .count-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#effectsRow .count-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.effects = chip.dataset.fx;
+      saveSession();
+    });
+  });
+
+  // 공간 구성 칩은 inline onclick="setLayout(...)" 으로 처리됨
+  // 초기 레이아웃 적용
+  setLayout('full');
+
+  // 라이트박스 셋업
+  setupLightbox();
+  
+  // 저장된 생성물 자동 로드
+  loadHistory();
+  // 💾 작업 세션 자동 복원 (첨부물, 시험지 정보 등)
+  restoreSession();
+});
+
+// ============ 히스토리 로드 ============
+async function loadHistory(){
+  const counter = document.getElementById('counter');
+  counter.textContent = '불러오는 중...';
+  
+  const saved = await dbLoadAll();
+  saved.sort((a,b) => b.timestamp - a.timestamp);  // 최신순
+  
+  if(saved.length === 0){
+    counter.textContent = '생성 0건';
+    return;
+  }
+  
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  document.getElementById('clearAllBtn').style.display = 'block';
+  
+  saved.forEach((rec, idx) => {
+    state.results.push(rec);
+    addCompletedCard(rec, saved.length - idx);
+  });
+  
+  counter.textContent = `생성 ${state.results.length}건 (영구 저장)`;
+}
+
+// ============ 💾 작업 세션 복원 ============
+async function restoreSession(){
+  try {
+    const s = await loadSession();
+    if(!s) return;
+    
+    // 입력값 복원
+    if(s.prompt){
+      state.prompt = s.prompt;
+      const el = document.getElementById('promptText');
+      if(el) el.value = s.prompt;
+    }
+    if(s.supportSubjects){
+      state.supportSubjects = s.supportSubjects;
+      const el = document.getElementById('supportSubjectsText');
+      if(el) el.value = s.supportSubjects;
+    }
+    if(s.composition){
+      state.composition = s.composition;
+      const el = document.getElementById('compositionText');
+      if(el) el.value = s.composition;
+    }
+    if(typeof updatePromptCharCount === 'function') updatePromptCharCount();
+    
+    // 첨부물 복원
+    if(Array.isArray(s.refs) && s.refs.length){
+      state.refs = s.refs;
+      renderRefs();
+    }
+    if(Array.isArray(s.compRefs) && s.compRefs.length){
+      state.compRefs = s.compRefs;
+      renderCompRefs();
+    }
+    if(Array.isArray(s.styleRefs) && s.styleRefs.length){
+      state.styleRefs = s.styleRefs;
+      renderStyleRefs();
+    }
+    
+    // 옵션 복원 (UI 동기화)
+    if(s.tab){
+      const layoutKey = s.tab === 'soyang' ? 'focal' : s.tab === 'research' ? 'research' : 'full';
+      if(typeof setLayout === 'function') setLayout(layoutKey);
+    }
+    if(s.tone){
+      state.tone = s.tone;
+      document.querySelectorAll('#toneRow .count-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.tone === s.tone);
+      });
+    }
+    if(s.intent){
+      state.intent = s.intent;
+      document.querySelectorAll('#intentRow .count-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.intent === s.intent);
+      });
+    }
+    if(s.whitespace){
+      state.whitespace = s.whitespace;
+      document.querySelectorAll('#whitespaceRow .count-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.ws === s.whitespace);
+      });
+    }
+    if(s.effects){
+      state.effects = s.effects;
+      document.querySelectorAll('#effectsRow .count-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.fx === s.effects);
+      });
+    }
+    if(typeof s.heavyMode === 'boolean' && s.heavyMode !== state.heavyMode){
+      if(typeof toggleHeavyMode === 'function') toggleHeavyMode();
+    }
+    document.body.classList.toggle('heavy-on', !!state.heavyMode);
+    if(s.analyzeMode && typeof setAnalyzeMode === 'function'){
+      setAnalyzeMode(s.analyzeMode);
+    }
+    if(s.count){
+      state.count = s.count;
+      document.querySelectorAll('#countRow .count-chip').forEach(c => {
+        c.classList.toggle('active', parseInt(c.dataset.count) === s.count);
+      });
+    }
+    if(s.quality){
+      state.quality = s.quality;
+      document.querySelectorAll('#qualityRow .count-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.quality === s.quality);
+      });
+    }
+    if(s.aspectRatio){
+      state.aspectRatio = s.aspectRatio;
+      document.querySelectorAll('#ratioRow .count-chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.ratio === s.aspectRatio);
+      });
+    }
+    
+    // 시험지 정보 복원
+    if(s.examInfo){
+      state.examInfo = s.examInfo;
+      if(typeof renderExamInfoBox === 'function') renderExamInfoBox();
+    }
+    
+    // 복원 완료 알림 (의미 있는 데이터가 있을 때만)
+    const hasContent = (s.refs && s.refs.length) || (s.compRefs && s.compRefs.length) || 
+                       (s.styleRefs && s.styleRefs.length) || s.examInfo || 
+                       (s.prompt && s.prompt.length > 2);
+    if(hasContent){
+      toast('💾 이전 작업 자동 복원됨');
+    }
+  } catch(e){
+    console.warn('세션 복원 실패:', e);
+  }
+}
+
+
+async function clearAllHistory(){
+  if(!confirm(`저장된 생성물 ${state.results.length}개를 모두 삭제할까요?\n(되돌릴 수 없습니다)`)) return;
+  await dbClearAll();
+  state.results = [];
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('counter').textContent = '생성 0건';
+  document.getElementById('clearAllBtn').style.display = 'none';
+  toast('전체 기록 삭제 완료');
+}
+
+async function deleteOne(id){
+  if(!confirm('이 생성물을 삭제할까요?')) return;
+  await dbDelete(id);
+  state.results = state.results.filter(r => r.id !== id);
+  const card = document.getElementById(id);
+  if(card) card.remove();
+  document.getElementById('counter').textContent = `생성 ${state.results.length}건${state.results.length ? ' (영구 저장)' : ''}`;
+  if(state.results.length === 0){
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'flex';
+    document.getElementById('clearAllBtn').style.display = 'none';
+  }
+  toast('삭제 완료');
+}
+
+function renderTips(){
+  const tips = state.tab === 'gidi' ? TIPS_GIDI : state.tab === 'soyang' ? TIPS_SOYANG : TIPS_RESEARCH;
+  document.getElementById('tipChips').innerHTML = tips.map(([label, text]) => 
+    `<span class="tip-chip" data-text="${escapeHtml(text)}">${label}</span>`
+  ).join('');
+  document.querySelectorAll('#tipChips .tip-chip').forEach(c => {
+    c.addEventListener('click', () => addTip(c.dataset.text));
+  });
+}
+
+// ============ 공간 구성 전환 ============
+function setLayout(layout){
+  // layout: 'full' (전체 구성) | 'focal' (주제부 중심) | 'research' (소재 자료조사)
+  if(layout === 'focal') state.tab = 'soyang';
+  else if(layout === 'research') state.tab = 'research';
+  else state.tab = 'gidi';
+  
+  // 칩 active 상태 토글
+  document.querySelectorAll('#layoutRow .count-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.layout === layout);
+  });
+  
+  const isFocal = layout === 'focal';
+  const isResearch = layout === 'research';
+  
+  // 주제부 중심일 때만 톤(정적/동적) 표시
+  const toneSection = document.getElementById('toneSection');
+  if(toneSection) toneSection.style.display = isFocal ? 'block' : 'none';
+  // 12원칙 표시는 전체 구성일 때만 (주제부, 자료조사는 숨김)
+  const principlesBox = document.getElementById('principlesBox');
+  if(principlesBox) principlesBox.style.display = (isFocal || isResearch) ? 'none' : 'block';
+  // 구도는 전체 구성·주제부 중심만 (자료조사는 의미 없으므로 숨김)
+  const compositionSection = document.getElementById('compositionSection');
+  if(compositionSection) compositionSection.style.display = isResearch ? 'none' : 'block';
+  // 통제 옵션도 전체 구성·주제부 중심만 (자료조사는 사진풍이라 미적용)
+  const controlSection = document.getElementById('controlSection');
+  if(controlSection) controlSection.style.display = isResearch ? 'none' : 'block';
+  // Heavy 디렉팅 토글도 동일 (research 모드에서 숨김)
+  const heavyToggle = document.getElementById('heavyToggle');
+  if(heavyToggle) heavyToggle.style.display = isResearch ? 'none' : 'flex';
+  // 스타일 참고도 동일 (research 모드에서 숨김)
+  const styleSection = document.getElementById('styleSection');
+  if(styleSection) styleSection.style.display = isResearch ? 'none' : 'block';
+  
+  // 라벨 업데이트
+  const atelierLabel = document.getElementById('atelierLabel');
+  if(atelierLabel) atelierLabel.textContent = 
+    isFocal ? 'Atelier · 주제부 중심' :
+    isResearch ? 'Atelier · 소재 자료' :
+    'Atelier · 전체 구성';
+  const emptyDesc = document.getElementById('emptyDesc');
+  if(emptyDesc) emptyDesc.textContent = 
+    isFocal ? '두 소재의 관계성을 보여주는 주제부 중심 시안을 생성하세요. (개체 표현)' :
+    isResearch ? '소재의 대표 이미지와 다양한 각도 8개를 한 장의 자료조사 시트로 생성하세요.' :
+    '제시 소재로 입시 기초디자인 완성작 시안을 생성하세요.';
+  const promptText = document.getElementById('promptText');
+  if(promptText) promptText.placeholder = 
+    isFocal ? '예: 가죽 가방과 빨대 케이스' :
+    isResearch ? '예: 가스 버너 (한 소재만)' :
+    '예: 타자기, 안경, 펜, 잉크';
+  if(typeof renderTips === 'function') renderTips();
+  
+  // 모드 전환 시 기본 비율 자동 (이전에 사용자가 명시 변경했어도 모드 바뀌면 재설정)
+  const defaultRatio = state.tab === 'research' ? 'square' : 'landscape';
+  state.aspectRatio = defaultRatio;
+  document.querySelectorAll('#ratioRow .count-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.ratio === defaultRatio);
+  });
+  
+  saveSession();
+}
+
+// ============ Heavy 디렉팅 모드 토글 ============
+function toggleHeavyMode(){
+  state.heavyMode = !state.heavyMode;
+  document.body.classList.toggle('heavy-on', state.heavyMode);  // 🌀 blob 색감 강화
+  saveSession();
+  const knob = document.getElementById('heavyToggleKnob');
+  const sw = document.getElementById('heavyToggleSwitch');
+  const wrap = document.getElementById('heavyToggle');
+  if(state.heavyMode){
+    knob.style.left = '17px';
+    knob.style.background = 'var(--ink-1)';
+    sw.style.background = 'var(--accent-red, #c0392b)';
+    wrap.style.borderColor = 'var(--ink-1)';
+    wrap.style.background = '#fff3f1';
+  } else {
+    knob.style.left = '1px';
+    sw.style.background = 'var(--paper-1)';
+    wrap.style.borderColor = 'var(--ink-3)';
+    wrap.style.background = 'var(--paper-2)';
+  }
+}
+
+
+
+// 하위 호환용 (기존 코드가 switchTab 호출하는 경우 대비)
+function switchTab(tab){
+  setLayout(tab === 'soyang' ? 'focal' : 'full');
+}
+
+function toggleSection(headEl, event){
+  if(event){
+    const t = event.target;
+    if(t.closest('input, button') && t.closest('.section-head') === headEl){
+      return;
+    }
+  }
+  const section = headEl.closest('.section');
+  if(!section) return;
+  section.classList.toggle('is-collapsed');
+}
+
+function togglePrinciples(){
+  document.getElementById('principlesBox').classList.toggle('open');
+}
+
+function addTip(text){
+  const ta = document.getElementById('promptText');
+  ta.value = text;
+  state.prompt = text;
+  document.getElementById('charCount').textContent = text.length + '자';
+  ta.focus();
+}
+
+function saveKey(){
+  const key = document.getElementById('apiKey').value.trim();
+  if(!key){toast('API 키를 입력해주세요'); return;}
+  if(!key.startsWith('sk-')){
+    toast('OpenAI API 키는 보통 sk-로 시작합니다. 확인해주세요.');
+    return;
+  }
+  state.apiKey = key;
+  try { localStorage.setItem(STORAGE_KEY, key); } catch(e){
+    toast('저장 실패 - 메모리에만 유지됩니다');
+  }
+  updateApiStatus(true);
+  toast('API 키 저장 완료 (영구 저장됨)');
+}
+
+function toggleKeyView(){
+  const input = document.getElementById('apiKey');
+  const toggle = document.getElementById('apiToggleShow');
+  if(input.type === 'password'){
+    input.type = 'text';
+    toggle.textContent = '🙈 숨기기';
+  } else {
+    input.type = 'password';
+    toggle.textContent = '👁 보기';
+  }
+}
+
+function clearKey(){
+  if(!confirm('저장된 API 키를 삭제할까요?')) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+  document.getElementById('apiKey').value = '';
+  state.apiKey = '';
+  updateApiStatus(false);
+  toast('API 키 삭제됨');
+}
+
+function updateApiStatus(ok){
+  const el = document.getElementById('apiStatus');
+  const section = document.getElementById('apiSection');
+  const title = document.getElementById('apiTitle');
+  if(ok){
+    el.innerHTML = '<span style="cursor:pointer;text-decoration:underline;" onclick="event.stopPropagation();clearKey();">키 삭제</span> · 영구 저장됨';
+    el.classList.add('ok');
+    section.classList.remove('warn');
+    section.classList.add('ok');
+    title.textContent = '✓ API Key 저장됨';
+    // 저장된 후엔 자동 접힘 (공간 절약)
+    section.classList.add('is-collapsed');
+  } else {
+    el.innerHTML = '키를 입력하고 저장 버튼을 눌러주세요<br><a href="javascript:void(0)" style="color:var(--red);font-weight:700;text-decoration:underline;" onclick="event.stopPropagation();showApiGuide();">🆘 처음 사용? 가이드 보기</a> · <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--red);" onclick="event.stopPropagation();">키 발급</a>';
+    el.classList.remove('ok');
+    section.classList.add('warn');
+    section.classList.remove('ok');
+    title.textContent = '⚠ API KEY 필요';
+    // 키 없으면 펼침
+    section.classList.remove('is-collapsed');
+  }
+}
+
+// ============ 참고 이미지 ============
+function handleFiles(e){
+  const files = Array.from(e.target.files).slice(0, 3 - state.refs.length);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      state.refs.push({
+        name: file.name,
+        mimeType: file.type,
+        dataUrl: ev.target.result,
+        base64: ev.target.result.split(',')[1]
+      });
+      renderRefs();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderRefs(){
+  const grid = document.getElementById('refsGrid');
+  grid.innerHTML = state.refs.map((r, i) => `
+    <div class="ref-thumb">
+      <img src="${r.dataUrl}" alt="">
+      <span class="ref-del" data-i="${i}">×</span>
+    </div>
+  `).join('');
+  document.querySelectorAll('.ref-del:not([data-style-i]):not([data-comp-i])').forEach(el => {
+    el.addEventListener('click', () => removeRef(parseInt(el.dataset.i)));
+  });
+  document.getElementById('refCount').textContent = `${state.refs.length}/3`;
+  document.getElementById('analyzeBtn').disabled = state.refs.length === 0 || state.analyzing;
+  saveSession();
+}
+
+function removeRef(i){
+  state.refs.splice(i, 1);
+  renderRefs();
+}
+
+// ============ 구도 참고 이미지 ============
+function handleCompFiles(e){
+  const files = Array.from(e.target.files).slice(0, 2 - state.compRefs.length);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      state.compRefs.push({
+        name: file.name,
+        mimeType: file.type,
+        dataUrl: ev.target.result,
+        base64: ev.target.result.split(',')[1]
+      });
+      renderCompRefs();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderCompRefs(){
+  const grid = document.getElementById('compRefsGrid');
+  grid.innerHTML = state.compRefs.map((r, i) => `
+    <div class="ref-thumb">
+      <img src="${r.dataUrl}" alt="">
+      <span class="ref-del" data-comp-i="${i}">×</span>
+    </div>
+  `).join('');
+  document.querySelectorAll('[data-comp-i]').forEach(el => {
+    el.addEventListener('click', () => removeCompRef(parseInt(el.dataset.compI)));
+  });
+  document.getElementById('compRefCount').textContent = `${state.compRefs.length}/2`;  saveSession();
+}
+
+function removeCompRef(i){
+  state.compRefs.splice(i, 1);
+  renderCompRefs();
+}
+
+// ============ 🎨 스타일 참고 이미지 (최대 10장) ============
+function handleStyleFiles(e){
+  const remaining = 10 - state.styleRefs.length;
+  if(remaining <= 0){ toast('스타일 참고는 최대 10장까지'); return; }
+  const files = Array.from(e.target.files).slice(0, remaining);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const item = {
+        name: file.name,
+        mimeType: file.type,
+        dataUrl: ev.target.result,
+        base64: ev.target.result.split(',')[1]
+      };
+      state.styleRefs.push(item);
+      // 라이브러리에 자동 저장
+      saveToStyleLibrary(item).catch(err => console.warn('스타일 라이브러리 저장 실패:', err));
+      renderStyleRefs();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function renderStyleRefs(){
+  const grid = document.getElementById('styleRefsGrid');
+  if(!grid) return;
+  grid.innerHTML = state.styleRefs.map((r, i) => `
+    <div class="ref-thumb">
+      <img src="${r.dataUrl}" alt="" title="${escapeHtml(r.libraryName || r.name || '')}">
+      <span class="ref-del" data-style-i="${i}">×</span>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.ref-del[data-style-i]').forEach(el => {
+    el.addEventListener('click', () => removeStyleRef(parseInt(el.dataset.styleI)));
+  });
+  const cnt = document.getElementById('styleRefCount');
+  if(cnt) cnt.textContent = `${state.styleRefs.length}/10`;  saveSession();
+}
+
+function removeStyleRef(i){
+  state.styleRefs.splice(i, 1);
+  renderStyleRefs();
+}
+
+
+
+// ============ 활성 Dropzone UI 표시 ============
+function updateActiveDropzoneUI(){
+  const dz = document.getElementById('dropzone');
+  const cdz = document.getElementById('compDropzone');
+  const sdz = document.getElementById('styleDropzone');
+  const zone = state.activeDropzone;
+  if(dz)  dz.classList.toggle('active-paste', zone === 'refs');
+  if(cdz) cdz.classList.toggle('active-paste', zone === 'comp');
+  if(sdz) sdz.classList.toggle('active-paste', zone === 'style');
+}
+
+// ============ 사진 분석 → 제시어 자동 생성 (OpenAI Vision) ============
+async function analyzeImages(){
+  if(!state.apiKey){toast('API 키를 먼저 저장해주세요'); return;}
+  if(state.refs.length === 0){toast('참고 이미지를 먼저 추가해주세요'); return;}
+  if(state.analyzing) return;
+  
+  // 시험지 모드면 별도 함수로 분기
+  if(state.analyzeMode === 'exam'){
+    return await analyzeExamSheet();
+  }
+  
+  state.analyzing = true;
+  const btn = document.getElementById('analyzeBtn');
+  const btnText = document.getElementById('analyzeBtnText');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="mini-spin"></span> 분석 중...';
+  
+  try {
+    const analyzePrompt = state.tab === 'gidi' ? ANALYZE_PROMPT_GIDI :
+                          state.tab === 'soyang' ? ANALYZE_PROMPT_SOYANG :
+                          ANALYZE_PROMPT_RESEARCH;
+    
+    const content = [
+      {type: 'text', text: analyzePrompt}
+    ];
+    state.refs.forEach(r => {
+      content.push({type: 'image_url', image_url: {url: r.dataUrl}});
+    });
+    
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {'Authorization': `Bearer ${state.apiKey}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{role: 'user', content}],
+        max_tokens: 100,
+        temperature: 0.7
+      })
+    });
+    
+    if(!res.ok){
+      const txt = await res.text();
+      let errMsg = `분석 실패 (${res.status})`;
+      try {errMsg = JSON.parse(txt).error?.message || errMsg;} catch{}
+      if(errMsg.includes('Incorrect API key') || errMsg.includes('invalid_api_key')){
+        errMsg = 'API 키가 유효하지 않습니다. 키를 다시 확인해주세요.';
+        updateApiStatus(false);
+      }
+      throw new Error(errMsg);
+    }
+    
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content;
+    if(!text) throw new Error('분석 결과를 받지 못했습니다');
+    
+    const cleaned = text.trim().replace(/^["'`]+|["'`]+$/g,'').split('\n')[0].trim();
+    
+    document.getElementById('promptText').value = cleaned;
+    state.prompt = cleaned;
+    updatePromptCharCount();
+    toast('제시어 생성 완료');
+    
+  } catch(err){
+    console.error(err);
+    toast('분석 실패: ' + err.message);
+  }
+  
+  state.analyzing = false;
+  document.getElementById('analyzeBtn').disabled = state.refs.length === 0;
+  btnText.textContent = '사진 분석 → 제시어 자동 생성';
+}
+
+// ============ 시험지 사진 분석 (대학·문제·메인·보조·주제 자동 파싱) ============
+async function analyzeExamSheet(){
+  state.analyzing = true;
+  const btn = document.getElementById('analyzeBtn');
+  const btnText = document.getElementById('analyzeBtnText');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="mini-spin"></span> 시험지 분석 중...';
+  
+  try {
+    const content = [{type: 'text', text: ANALYZE_PROMPT_EXAM}];
+    state.refs.forEach(r => {
+      content.push({type: 'image_url', image_url: {url: r.dataUrl}});
+    });
+    
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {'Authorization': `Bearer ${state.apiKey}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'gpt-4o',  // 시험지 그리드 파싱은 상위 모델
+        messages: [{role: 'user', content}],
+        max_tokens: 1500,
+        temperature: 0.3,
+        response_format: {type: 'json_object'}
+      })
+    });
+    
+    if(!res.ok){
+      const txt = await res.text();
+      let errMsg = `시험지 분석 실패 (${res.status})`;
+      try {errMsg = JSON.parse(txt).error?.message || errMsg;} catch{}
+      throw new Error(errMsg);
+    }
+    
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if(!text) throw new Error('시험지 분석 응답 없음');
+    
+    let info;
+    try { info = JSON.parse(text); }
+    catch(e){ throw new Error('JSON 파싱 실패: ' + e.message); }
+    
+    console.log('[시험지 분석 결과]', info);
+    showExamReviewModal(info);
+    
+  } catch(err){
+    console.error(err);
+    toast('시험지 분석 실패: ' + err.message);
+  }
+  
+  state.analyzing = false;
+  document.getElementById('analyzeBtn').disabled = state.refs.length === 0;
+  btnText.textContent = '시험지 분석 → 메인·보조 소재 자동 입력';
+}
+
+// 시험지 분석 결과 검토 모달
+function showExamReviewModal(info){
+  const supports = (info.support_subjects || []).join(', ');
+  const themeK = (info.theme_keywords || []).join(', ');
+  
+  const escape = (s) => escapeHtml(s || '');
+  
+  const interpretation = info.theme_interpretation || info.themeInterpretation || '';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section">
+      <h4 style="font-size:17px;">📋 시험지 분석 결과</h4>
+      <pre style="font-size:12px;line-height:1.7;">🏫 대학:         ${escape(info.university) || '(미인식)'}
+📏 규격:         ${escape(info.paper_size) || '(미인식)'}
+🎯 메인 소재:     ${escape(info.main_subject) || '(미인식)'}
+🧰 보조 소재:     ${escape(supports) || '(없음)'}
+💡 제시어:        ${escape(info.theme || themeK) || '(미인식)'}
+🎨 최종 목표:     ${escape(info.final_goal) || '(미인식)'}
+📐 표현 형식:     ${escape(info.format_hint) || '(미지정)'}</pre>
+      
+      ${interpretation ? `<div style="margin-top:14px;padding:12px 14px;background:linear-gradient(180deg,#fff 0%,#f0f0f0 100%);border:1px solid #dadada;border-left:3px solid #2a2a2a;border-radius:10px;">
+        <div style="font-size:11px;font-weight:800;color:#2a2a2a;letter-spacing:0.5px;margin-bottom:6px;">🔍 제시어 시각 해석</div>
+        <div style="font-size:13px;color:#1a1a1a;line-height:1.65;">${escape(interpretation)}</div>
+      </div>` : ''}
+      
+      ${info.question1 ? `<div style="margin-top:10px;"><strong style="font-size:11px;color:#7a7a7a;">📝 문제 1</strong><pre style="font-size:11px;margin-top:4px;">${escape(info.question1)}</pre></div>` : ''}
+      ${info.question2 ? `<div style="margin-top:6px;"><strong style="font-size:11px;color:#7a7a7a;">📝 문제 2</strong><pre style="font-size:11px;margin-top:4px;">${escape(info.question2)}</pre></div>` : ''}
+      
+      <div style="margin-top:16px;display:flex;gap:8px;">
+        <button class="result-btn primary" style="flex:1;padding:11px;font-size:14px;font-weight:800;" onclick="confirmApplyExam()">이대로 적용</button>
+        <button class="result-btn" style="flex:1;padding:11px;font-size:14px;" onclick="closeModal()">취소</button>
+      </div>
+    </div>
+  `;
+  // 임시로 결과 저장 (적용 버튼이 사용)
+  window._pendingExamInfo = info;
+  document.getElementById('modal').classList.add('show');
+}
+
+function confirmApplyExam(){
+  if(window._pendingExamInfo){
+    applyExamAnalysisResult(window._pendingExamInfo);
+    window._pendingExamInfo = null;
+    closeModal();
+    toast('🎯 시험지 정보 적용 완료');
+  }
+}
+
+// ============ 프롬프트 빌더 ============
+function buildPrompt(analysis){
+  let refPart = '';
+  if(state.refs.length){
+    refPart += `\n\n[사물 참고 이미지 활용]\n첨부된 ${state.refs.length}장의 사물 참고 이미지에 등장하는 소재·요소·색감·분위기를 적극 차용하되, 한국 미대 입시 작품으로 재해석. 사진을 그대로 베끼지 말고 입시 작품 스타일로 변환.`;
+  }
+  if(state.styleRefs && state.styleRefs.length){
+    refPart += `\n\n[🎨 스타일 참고 이미지 활용]\n별도로 첨부된 ${state.styleRefs.length}장의 스타일 참고 이미지에서 다음을 반영하라:\n- 채색감 (마카·수채·과슈·색연필 등 사용 방식)\n- 붓 터치와 표현 방식\n- 색조·톤·명도 대비 패턴\n- 디테일 묘사 방식\n- 전체적인 화풍·완성도 톤\n중요: 스타일 참고 이미지의 사물·구도·소재는 무시할 것. 오로지 '어떻게 그렸는지'(표현 방식, 필치, 채색 방법)만 차용. 우리 작품의 소재·구도는 본문에 명시된 것을 따른다.`;
+  }
+  
+  const template = state.tab === 'gidi' ? GIDI_PROMPT :
+                   state.tab === 'soyang' ? SOYANG_PROMPT :
+                   RESEARCH_PROMPT;
+  
+  // 보조 소재 처리
+  const supports = (state.supportSubjects || '').trim();
+  const supportText = supports 
+    ? supports 
+    : '(보조 소재 없음 — 메인 소재만 사용)';
+  
+  // 시험지 정보 처리
+  let examText = '';
+  if(state.examInfo){
+    const e = state.examInfo;
+    const lines = [];
+    if(e.university) lines.push('대학: ' + e.university);
+    if(e.paperSize) lines.push('규격: ' + e.paperSize);
+    if(e.theme) lines.push('제시어: ' + e.theme);
+    if(e.finalGoal) lines.push('최종 목표: ' + e.finalGoal);
+    if(e.formatHint) lines.push('표현 형식: ' + e.formatHint);
+    if(lines.length){
+      examText = '[입시 유형 정보 — 반드시 반영할 것]\n' + lines.join('\n') + '\n\n';
+    }
+    // ★ 제시어 해석 — 가장 강하게 주입 ★
+    if(e.themeInterpretation){
+      examText += '[★ 제시어 시각 해석 — 이 해석을 화면 구성·구도·동세에 반드시 반영할 것 ★]\n' + e.themeInterpretation + '\n\n';
+    }
+  }
+  
+  let result = template
+    .replaceAll('{PROMPT}', state.prompt || '자유주제')
+    .replaceAll('{SUPPORT_SUBJECTS}', supportText)
+    .replaceAll('{EXAM_INFO}', examText)
+    .replace('{REF_PART}', refPart);
+  
+  // ===== 통제 옵션 치환 (gidi·soyang 모드만) =====
+  if(state.tab !== 'research'){
+    const intent = state.intent || 'sibumjak';
+    const ws = state.whitespace || 'normal';
+    const fx = state.effects || 'low';
+    result = result.replaceAll('{INTENT}', INTENT_TEXT[intent]);
+    result = result.replaceAll('{WHITESPACE_PCT}', String(WHITESPACE_PCT[ws]));
+    result = result.replaceAll('{EFFECTS_RULE}', EFFECTS_TEXT[fx]);
+  }
+  
+  if(state.tab === 'gidi'){
+    // 기초디자인 - 분석 + 구도
+    result = result.replace('{ANALYSIS}', analysis || '(분석 결과 없음 - 원칙 기준으로 구성)');
+    result = result.replace('{COMPOSITION}', state.composition || '(미지정 - 강사 분석이 추천한 구도 적용)');
+  } else if(state.tab === 'soyang') {
+    // 주제부 연출 - tone 반영
+    const tone = state.tone || 'dynamic';
+    const toneLabel = tone === 'dynamic' ? '동적 (움직임·흐름·변화의 순간)' : '정적 (균형·안정·명상적 분위기)';
+    const toneDetail = TONE_DETAILS[tone];
+    result = result.replace('{TONE}', toneLabel);
+    result = result.replace('{TONE_DETAIL}', toneDetail);
+    if(result.includes('{ANALYSIS}')){
+      result = result.replace('{ANALYSIS}', analysis || '');
+    }
+  }
+  // research 모드는 별도 치환 불필요 ({PROMPT}, {REF_PART}만 사용)
+  
+  return result;
+}
+
+// ============ 생성 ============
+async function generate(){
+  if(!state.apiKey){toast('API 키를 먼저 저장해주세요'); return;}
+  if(!state.prompt && !state.supportSubjects && state.refs.length === 0){
+    toast('제시어 입력 또는 참고 이미지 업로드가 필요합니다');
+    return;
+  }
+  if(state.generating) return;
+  
+  state.generating = true;
+  document.getElementById('genBtn').disabled = true;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  
+  // ===== Heavy 디렉팅 모드 분기 =====
+  let analysis = '';
+  let heavyResult = null;  // Heavy 모드일 때 분석/평가/최종 프롬프트 저장
+  let fullPrompt = '';
+  
+  if(state.heavyMode && state.tab !== 'research'){
+    // 🎬 Heavy 모드: 5단계 파이프라인
+    try {
+      heavyResult = await runHeavyDirecting((msg) => {
+        document.getElementById('genBtnText').textContent = '🎬 ' + msg;
+      });
+      fullPrompt = heavyResult.finalPrompt;
+      analysis = JSON.stringify(heavyResult.analysis, null, 2);
+      console.log('[Heavy 디렉팅 완료]', heavyResult);
+    } catch(err){
+      console.error('Heavy 디렉팅 실패:', err);
+      toast('Heavy 디렉팅 실패: ' + err.message + ' (일반 모드로 진행)');
+      // 폴백: 일반 모드로 진행
+      try {
+        analysis = await analyzeSubject(state.prompt, state.refs, state.composition, state.compRefs);
+      } catch(e2){ analysis = ''; }
+      fullPrompt = buildPrompt(analysis);
+    }
+  } else if(state.tab !== 'research'){
+    // 🔍 일반 모드: 짧은 분석 + buildPrompt
+    document.getElementById('genBtnText').textContent = '소재 분석 중...';
+    try {
+      analysis = await analyzeSubject(state.prompt, state.refs, state.composition, state.compRefs);
+      console.log('[소재 분석]', analysis);
+    } catch(err){
+      console.warn('분석 실패, 원칙만으로 진행:', err.message);
+      analysis = '';
+    }
+    fullPrompt = buildPrompt(analysis);
+  } else {
+    // research 모드: 분석 없이 곧장
+    fullPrompt = buildPrompt('');
+  }
+  
+  document.getElementById('genBtnText').textContent = '이미지 생성 중...';
+  
+  // 🎨 최종 프롬프트로 이미지 생성
+  const meta = {
+    tab: state.tab,
+    tabLabel: state.tab === 'gidi' ? '전체 구성' :
+              state.tab === 'soyang' ? '주제부 중심' :
+              '소재 자료',
+    prompt: state.prompt,
+    supportSubjects: state.supportSubjects,
+    examInfo: state.examInfo ? {...state.examInfo} : null,
+    composition: state.composition,
+    compRefs: [...state.compRefs],
+    tone: state.tone,
+    quality: state.quality,
+    intent: state.intent,
+    whitespace: state.whitespace,
+    effects: state.effects,
+    heavyMode: state.heavyMode,
+    heavyResult: heavyResult,  // Heavy 모드의 모든 디렉팅 결과
+    analysis: analysis,
+    refs: [...state.refs],
+    styleRefs: [...(state.styleRefs || [])],
+    fullPrompt: fullPrompt,
+    timestamp: Date.now()
+  };
+  
+  const placeholders = [];
+  for(let i=0; i<state.count; i++){
+    const id = 'r_' + Date.now() + '_' + i;
+    placeholders.push(id);
+    addPlaceholderCard(id, meta, state.results.length + i + 1);
+  }
+  
+  // 🚀 병렬 생성
+  const promises = placeholders.map(async (id) => {
+    try {
+      // 사물 참고 + 스타일 참고를 합쳐서 전달
+      const allRefs = [...meta.refs, ...(meta.styleRefs || [])];
+      const img = await callOpenAI(meta.fullPrompt, allRefs);
+      const record = {...meta, image: img, id};
+      updateCard(id, img, meta);
+      state.results.unshift(record);
+      dbSave(record).catch(e => console.error('저장 실패:', e));
+      document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
+      document.getElementById('clearAllBtn').style.display = 'block';
+    } catch(err){
+      console.error(err);
+      showError(id, err.message);
+    }
+  });
+  
+  await Promise.all(promises);
+  
+  state.generating = false;
+  document.body.classList.remove('generating');  // 🌀 blob 정상화
+  document.getElementById('genBtn').disabled = false;
+  document.getElementById('genBtnText').textContent = '참고 이미지 생성';
+}
+
+async function callOpenAI(promptText, refs){
+  const isEdit = refs.length > 0;
+  const quality = state.quality || 'medium';
+  let res;
+  
+  // research(자료조사)는 정사각형, 그 외는 가로 1536x1024
+  // 비율 칩 선택값에 따라 사이즈 결정
+  const sizeMap = {landscape:'1536x1024', portrait:'1024x1536', square:'1024x1024'};
+  const size = sizeMap[state.aspectRatio] || (state.tab === 'research' ? '1024x1024' : '1536x1024');
+  
+  if(isEdit){
+    // 참고 이미지 있음 → /v1/images/edits (multipart/form-data)
+    const formData = new FormData();
+    formData.append('model', 'gpt-image-2');
+    formData.append('prompt', promptText);
+    formData.append('size', size);
+    formData.append('quality', quality);
+    formData.append('n', '1');
+    
+    for(let i=0; i<refs.length; i++){
+      const r = refs[i];
+      let mime = (r && r.mimeType) || 'image/png';
+      let b64 = null;
+      if(r && r.dataUrl && r.dataUrl.startsWith('data:')){
+        b64 = r.dataUrl.split(',')[1];
+      } else if(r && r.dataUrl && /^https?:/.test(r.dataUrl)){
+        // 클라우드(Storage)에서 로드된 이미지 → 받아서 base64로 변환
+        const resp = await fetch(r.dataUrl);
+        const blob = await resp.blob();
+        mime = blob.type || mime;
+        b64 = await new Promise(res => {
+          const fr = new FileReader();
+          fr.onload = () => res(fr.result.split(',')[1]);
+          fr.readAsDataURL(blob);
+        });
+      } else if(r && r.base64){
+        b64 = r.base64;
+      }
+      if(!b64){ console.warn('ref 이미지 base64 없음 — 스킵', r && r.name); continue; }
+      const byteString = atob(b64);
+      const bytes = new Uint8Array(byteString.length);
+      for(let j=0; j<byteString.length; j++) bytes[j] = byteString.charCodeAt(j);
+      const blob = new Blob([bytes], {type: mime});
+      const ext = mime.includes('png') ? 'png' : 'jpg';
+      formData.append('image[]', blob, `ref${i}.${ext}`);
+    }
+    
+    res = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: {'Authorization': `Bearer ${state.apiKey}`},
+      body: formData
+    });
+  } else {
+    res = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${state.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-image-2',
+        prompt: promptText,
+        size: size,
+        quality: quality,
+        n: 1
+      })
+    });
+  }
+  
+  if(!res.ok){
+    const txt = await res.text();
+    let errMsg = `API 오류 (${res.status})`;
+    try {errMsg = JSON.parse(txt).error?.message || errMsg;} catch{}
+    if(errMsg.includes('Incorrect API key') || errMsg.includes('invalid_api_key') || errMsg.includes('Invalid API key')){
+      errMsg = 'API 키가 유효하지 않습니다.\n좌측 상단에서 키를 확인해주세요.\n(👁 보기 버튼으로 입력값 확인 가능)';
+      updateApiStatus(false);
+    } else if(errMsg.includes('insufficient_quota') || errMsg.includes('quota')){
+      errMsg = 'API 사용량 한도 초과 또는 결제 잔액 부족. OpenAI 계정을 확인해주세요.';
+    } else if(errMsg.includes('rate_limit') || errMsg.includes('Rate limit')){
+      errMsg = 'API 호출 빈도 제한. 잠시 후 다시 시도해주세요.';
+    } else if(errMsg.includes('verification') || errMsg.includes('Organization')){
+      errMsg = 'gpt-image-2 사용을 위해 OpenAI 조직 인증이 필요합니다. platform.openai.com에서 인증을 완료해주세요.';
+    } else if(errMsg.includes('content_policy') || errMsg.includes('safety')){
+      errMsg = '콘텐츠 정책 위반 가능. 제시어를 조정해보세요.';
+    }
+    throw new Error(errMsg);
+  }
+  
+  const data = await res.json();
+  const b64 = data.data?.[0]?.b64_json;
+  if(!b64) throw new Error('이미지 응답을 받지 못했습니다. 제시어를 조정해보세요.');
+  
+  return {
+    mimeType: 'image/png',
+    dataUrl: `data:image/png;base64,${b64}`
+  };
+}
+
+// ============ 카드 ============
+function addPlaceholderCard(id, meta, num){
+  const card = document.createElement('div');
+  card.className = 'result-card' + (meta.tab === 'research' ? ' is-research' : '');
+  card.id = id;
+  card.innerHTML = `
+    <div class="result-img-wrap">
+      <span class="result-num">#${String(num).padStart(3,'0')}</span>
+      <div class="result-loading">
+        <div class="spinner"></div>
+        <div class="loading-text">GENERATING...</div>
+      </div>
+    </div>
+    <div class="result-meta">
+      <div class="result-prompt">${escapeHtml(meta.prompt || '자유주제')}</div>
+      <div class="result-tags">
+        <span class="result-tag red">${meta.tabLabel}</span>${meta.tab === "soyang" && meta.tone ? `<span class="result-tag">${meta.tone === "static" ? "정적" : "동적"}</span>` : ""}
+        ${meta.is3D ? '<span class="result-tag" style="border-color:#1a1a1a;color:#fff;background:#1a1a1a;">🎲 3D 렌더</span>' : ''}
+        ${meta.heavyMode ? '<span class="result-tag" style="border-color:#c0392b;color:#c0392b;background:#fff3f1;">🎬 Heavy</span>' : ''}
+        ${meta.examInfo && meta.examInfo.university ? `<span class="result-tag" style="border-color:#c0392b;color:#c0392b;background:#fff3f1;">🏫 ${escapeHtml(meta.examInfo.university)}</span>` : ''}
+        ${meta.supportSubjects ? `<span class="result-tag">+보조 ${(meta.supportSubjects.split(',').filter(s=>s.trim()).length)}개</span>` : ''}
+        ${meta.redirectLabel ? `<span class="result-tag" style="border-color:#1e7e34;color:#1e7e34;background:#eafaf1;">🔧 ${escapeHtml(meta.redirectLabel)}</span>` : ''}
+        ${meta.refs.length ? `<span class="result-tag">참고 ${meta.refs.length}장</span>` : ''}
+        ${(meta.styleRefs || []).length ? `<span class="result-tag" style="border-color:#0d6efd;color:#0d6efd;background:#e7f1ff;">🎨 스타일 ${meta.styleRefs.length}장</span>` : ''}
+      </div>
+    </div>
+  `;
+  document.getElementById('results').prepend(card);
+}
+
+function updateCard(id, img, meta){
+  const card = document.getElementById(id);
+  if(!card) return;
+  const num = card.querySelector('.result-num').textContent;
+  card.innerHTML = `
+    <div class="result-img-wrap" data-act="zoom" data-id="${id}" style="cursor:zoom-in;">
+      <span class="result-num">${num}</span>
+      <img src="${img.dataUrl}" alt="">
+    </div>
+    <div class="result-meta">
+      <div class="result-prompt">${escapeHtml(meta.prompt || '자유주제')}</div>
+      <div class="result-tags">
+        <span class="result-tag red">${meta.tabLabel}</span>${meta.tab === "soyang" && meta.tone ? `<span class="result-tag">${meta.tone === "static" ? "정적" : "동적"}</span>` : ""}
+        ${meta.is3D ? '<span class="result-tag" style="border-color:#1a1a1a;color:#fff;background:#1a1a1a;">🎲 3D 렌더</span>' : ''}
+        ${meta.heavyMode ? '<span class="result-tag" style="border-color:#c0392b;color:#c0392b;background:#fff3f1;">🎬 Heavy</span>' : ''}
+        ${meta.examInfo && meta.examInfo.university ? `<span class="result-tag" style="border-color:#c0392b;color:#c0392b;background:#fff3f1;">🏫 ${escapeHtml(meta.examInfo.university)}</span>` : ''}
+        ${meta.supportSubjects ? `<span class="result-tag">+보조 ${(meta.supportSubjects.split(',').filter(s=>s.trim()).length)}개</span>` : ''}
+        ${meta.redirectLabel ? `<span class="result-tag" style="border-color:#1e7e34;color:#1e7e34;background:#eafaf1;">🔧 ${escapeHtml(meta.redirectLabel)}</span>` : ''}
+        ${meta.refs.length ? `<span class="result-tag">참고 ${meta.refs.length}장</span>` : ''}
+        ${(meta.styleRefs || []).length ? `<span class="result-tag" style="border-color:#0d6efd;color:#0d6efd;background:#e7f1ff;">🎨 스타일 ${meta.styleRefs.length}장</span>` : ''}
+      </div>
+      <div class="result-actions">
+        <button class="result-btn primary" data-act="dl" data-id="${id}">저장</button>
+        <button class="result-btn" data-act="info" data-id="${id}">정보</button>
+        <button class="result-btn" data-act="re" data-id="${id}">다시</button>
+        <button class="result-btn" data-act="redir" data-id="${id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
+        <button class="result-btn" data-act="to3d" data-id="${id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
+        <button class="result-btn" data-act="del" data-id="${id}">×</button>
+      </div>
+    </div>
+  `;
+  card._meta = meta;
+  card._img = img;
+  bindCardActions(card, id);
+}
+
+function bindCardActions(card, id){
+  card.querySelectorAll('[data-act]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const act = el.dataset.act;
+      if(act === 'dl') downloadImg(id);
+      else if(act === 'info') showInfo(id);
+      else if(act === 're') regenerate(id);
+      else if(act === 'redir') showRedirectModal(id);
+      else if(act === 'to3d') convertTo3D(id);
+      else if(act === 'del') deleteOne(id);
+      else if(act === 'zoom'){
+        if(card._img && card._meta) openLightbox(card._img.dataUrl, card._meta);
+      }
+    });
+  });
+}
+
+// 저장된 카드 (히스토리에서 로드된 것)
+function addCompletedCard(rec, num){
+  const card = document.createElement('div');
+  card.className = 'result-card' + (rec.tab === 'research' ? ' is-research' : '');
+  card.id = rec.id;
+  card._meta = rec;
+  card._img = rec.image;
+  card.innerHTML = `
+    <div class="result-img-wrap" data-act="zoom" data-id="${rec.id}" style="cursor:zoom-in;">
+      <span class="result-num">#${String(num).padStart(3,'0')}</span>
+      <img src="${rec.image.dataUrl}" alt="">
+    </div>
+    <div class="result-meta">
+      <div class="result-prompt">${escapeHtml(rec.prompt || '자유주제')}</div>
+      <div class="result-tags">
+        <span class="result-tag red">${rec.tabLabel}</span>${rec.tab === "soyang" && rec.tone ? `<span class="result-tag">${rec.tone === "static" ? "정적" : "동적"}</span>` : ""}
+        ${rec.is3D ? '<span class="result-tag" style="border-color:#1a1a1a;color:#fff;background:#1a1a1a;">🎲 3D 렌더</span>' : ''}
+        ${rec.heavyMode ? '<span class="result-tag" style="border-color:#c0392b;color:#c0392b;background:#fff3f1;">🎬 Heavy</span>' : ''}
+        ${rec.examInfo && rec.examInfo.university ? `<span class="result-tag" style="border-color:#c0392b;color:#c0392b;background:#fff3f1;">🏫 ${escapeHtml(rec.examInfo.university)}</span>` : ''}
+        ${rec.supportSubjects ? `<span class="result-tag">+보조 ${(rec.supportSubjects.split(',').filter(s=>s.trim()).length)}개</span>` : ''}
+        ${rec.redirectLabel ? `<span class="result-tag" style="border-color:#1e7e34;color:#1e7e34;background:#eafaf1;">🔧 ${escapeHtml(rec.redirectLabel)}</span>` : ''}
+        ${rec.refs.length ? `<span class="result-tag">참고 ${rec.refs.length}장</span>` : ''}
+        ${(rec.styleRefs || []).length ? `<span class="result-tag" style="border-color:#0d6efd;color:#0d6efd;background:#e7f1ff;">🎨 스타일 ${rec.styleRefs.length}장</span>` : ''}
+        <span class="result-tag">${new Date(rec.timestamp).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}</span>
+      </div>
+      <div class="result-actions">
+        <button class="result-btn primary" data-act="dl" data-id="${rec.id}">저장</button>
+        <button class="result-btn" data-act="info" data-id="${rec.id}">정보</button>
+        <button class="result-btn" data-act="re" data-id="${rec.id}">다시</button>
+        <button class="result-btn" data-act="redir" data-id="${rec.id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
+        <button class="result-btn" data-act="to3d" data-id="${rec.id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
+        <button class="result-btn" data-act="del" data-id="${rec.id}">×</button>
+      </div>
+    </div>
+  `;
+  bindCardActions(card, rec.id);
+  document.getElementById('results').appendChild(card);
+}
+
+function showError(id, msg){
+  const card = document.getElementById(id);
+  if(!card) return;
+  const wrap = card.querySelector('.result-img-wrap');
+  wrap.innerHTML = `
+    <span class="result-num">${card.querySelector('.result-num')?.textContent || '#ERR'}</span>
+    <div class="error-msg">⚠ 생성 실패<br><br>${escapeHtml(msg)}</div>
+  `;
+}
+
+async function downloadImg(id){
+  const card = document.getElementById(id);
+  if(!card?._img) return;
+  const safe = (card._meta.prompt || 'untitled').replace(/[^가-힣a-z0-9]/gi,'_').slice(0,20);
+  const fname = `drawlab_${card._meta.tab}_${safe}_${Date.now()}.png`;
+  const du = card._img.dataUrl;
+  const a = document.createElement('a');
+  try {
+    if(du && /^https?:/.test(du)){
+      // 클라우드 URL → blob 받아서 저장 (다운로드 강제)
+      const blob = await (await fetch(du)).blob();
+      const objUrl = URL.createObjectURL(blob);
+      a.href = objUrl; a.download = fname; a.click();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+    } else {
+      a.href = du; a.download = fname; a.click();
+    }
+    toast('다운로드 시작');
+  } catch(e){
+    console.error('다운로드 실패:', e);
+    window.open(du, '_blank');
+  }
+}
+
+
+
+// ============ 처음 사용 가이드 모달 (다른 사람 공유 시 도움말) ============
+function showApiGuide(){
+  const lk = 'color:#0a0a0a;text-decoration:underline;font-weight:600;';
+  const warn = 'background:#fafafa;border-left:3px solid #0a0a0a;padding:10px 14px;border-radius:8px;font-family:\'Pretendard Variable\',sans-serif;font-size:13px;line-height:1.7;color:#1a1a1a;margin-top:6px;';
+  const note = 'background:#f3f3f3;border-left:3px solid #7a7a7a;padding:10px 14px;border-radius:8px;font-family:\'Pretendard Variable\',sans-serif;font-size:13px;line-height:1.7;color:#1a1a1a;margin-top:6px;';
+  
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section">
+      <h4 style="font-size:18px;margin-bottom:8px;">🆘 처음 사용하시나요?</h4>
+      <div style="font-size:13px;color:#1a1a1a;line-height:1.65;">
+        이 앱은 <strong>OpenAI의 이미지 생성 API</strong>를 사용합니다.<br>
+        본인 OpenAI 계정과 API 키가 필요해요. 아래 5단계를 따라 하시면 처음 한 번만 설정하고 끝!
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>1️⃣ OpenAI 계정 만들기</h4>
+      <div style="${warn}">• <a href="https://platform.openai.com/signup" target="_blank" style="${lk}">platform.openai.com/signup</a> 접속<br>
+• 회원가입 (Google 계정으로 빠르게 가능)<br>
+• 휴대폰 인증까지 완료</div>
+    </div>
+
+    <div class="modal-section">
+      <h4>2️⃣ 결제 정보 등록 + 충전 (필수)</h4>
+      <div style="${warn}">• <a href="https://platform.openai.com/settings/organization/billing" target="_blank" style="${lk}">Billing 페이지</a> 이동<br>
+• "Add payment method"로 카드 등록<br>
+• "Add to credit balance"로 최소 $5 충전<br>
+<strong>⚠ 충전 안 하면 키가 발급되어도 동작하지 않음</strong></div>
+    </div>
+
+    <div class="modal-section">
+      <h4>3️⃣ 조직 인증 (gpt-image 사용 필수)</h4>
+      <div style="${warn}">• <a href="https://platform.openai.com/settings/organization/general" target="_blank" style="${lk}">Organization General</a> 이동<br>
+• "Verify Organization" 클릭<br>
+• 신분증 + 셀카로 본인 인증 (1~3분, 자동)<br>
+<strong>⚠ 인증 안 하면 "organization must be verified" 오류 발생.</strong> 이미지 생성 모델은 이 인증이 필수.</div>
+    </div>
+
+    <div class="modal-section">
+      <h4>4️⃣ API 키 발급</h4>
+      <div style="${warn}">• <a href="https://platform.openai.com/api-keys" target="_blank" style="${lk}">API keys 페이지</a> 이동<br>
+• "+ Create new secret key" 클릭<br>
+• 이름 입력 (예: DRAWLAB)<br>
+• "Create secret key" 클릭<br>
+• ★ <strong>sk-... 로 시작하는 키를 즉시 복사</strong> (이 키는 다시 못 봄. 분실 시 새로 발급)</div>
+    </div>
+
+    <div class="modal-section">
+      <h4>5️⃣ 이 앱에 키 입력</h4>
+      <div style="${warn}">• 좌측 상단 API Key 칸에 sk-... 키 붙여넣기<br>
+• "저장" 버튼 클릭<br>
+• ✓ 표시되면 완료<br>
+• 이 브라우저에 영구 저장됨 (다시 입력 불필요)</div>
+    </div>
+
+    <div class="modal-section">
+      <h4>💰 비용 안내</h4>
+      <div style="${note}">• 본인 OpenAI 계정 비용 부담 (이 앱·Anthropic과 무관)<br>
+• 이미지 1장 대략:<br>
+&nbsp;&nbsp;- 저품질 (low):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;약 $0.011 <span style="color:#7a7a7a;">(~15원)</span><br>
+&nbsp;&nbsp;- 중품질 (medium):&nbsp;&nbsp;약 $0.042 <span style="color:#7a7a7a;">(~55원)</span><br>
+&nbsp;&nbsp;- 고품질 (high):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;약 $0.167 <span style="color:#7a7a7a;">(~230원)</span><br>
+• 디렉터 모드: 추가 약 $0.02 <span style="color:#7a7a7a;">(~30원)</span><br>
+• 시험지 분석: 추가 약 $0.01 <span style="color:#7a7a7a;">(~15원)</span><br>
+<span style="color:#7a7a7a;">※ 정확한 가격은 <a href="https://openai.com/api/pricing/" target="_blank" style="${lk}">OpenAI 공식 가격표</a> 참고</span></div>
+    </div>
+
+    <div class="modal-section">
+      <h4>🔒 보안 안내</h4>
+      <div style="${note}">• API 키는 <strong>이 브라우저에만 저장</strong>됩니다 (LocalStorage)<br>
+• 이 앱·Anthropic·외부 서버로 키가 전송되지 않음<br>
+• API 호출은 OpenAI 서버로만 직접 갑니다<br>
+• 생성 이미지는 <strong>클라우드(Supabase)에 저장</strong>되어 기기 간 동기화됩니다<br>
+• <strong>다른 사람과 키 공유 금지</strong> (도용 시 비용 청구됨)<br>
+• 키 삭제: 좌측 API Key 영역의 "키 삭제" 클릭<br>
+• 의심되면 OpenAI 사이트에서 즉시 키 폐기 후 재발급</div>
+    </div>
+
+    <div class="modal-section">
+      <h4>❓ 자주 묻는 오류</h4>
+      <div style="${note}"><strong>"Incorrect API key"</strong> → 키 오타 또는 만료. 재확인 또는 재발급<br>
+<strong>"organization must be verified"</strong> → 3단계 조직 인증 필요<br>
+<strong>"quota exceeded"</strong> → 잔액 부족. 2단계로 가서 충전<br>
+<strong>"rate limit"</strong> → 너무 빠르게 연달아 요청. 1~2분 대기 후 재시도</div>
+    </div>
+    
+    <div style="margin-top:20px;text-align:center;">
+      <button class="result-btn primary" style="padding:12px 28px;font-size:14px;font-weight:700;" onclick="closeModal()">알겠습니다</button>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('show');
+}
+
+
+// ============ 3D 렌더링 변환 ============
+const RENDER_3D_PROMPT = `[★ 가장 중요한 절대 규칙 ★]
+첨부된 이미지에 그려진 사물·구도·배치만을 정확히 따라야 한다. 첨부 이미지에 없는 다른 사물·요소를 절대 추가하지 말 것. 이건 단순한 톤 변환 작업이지 새로 그리는 작업이 아니다.
+
+[목표]
+첨부된 손그림 이미지를 동일한 사물·구도·구성으로 유지하면서, 사실적인 3D 렌더링 톤으로만 표현 방식을 바꾸는 것. 사물의 종류·개수·위치·각도는 모두 첨부 이미지를 따른다.
+
+[유지할 것 — 매우 중요]
+- 원본 이미지의 소재 배치, 위치 관계, 구도 흐름 그대로
+- 각 소재의 크기·각도·방향 유지
+- 화면 구성(근경/중경/원경 배치) 유지
+- 모서리 여백, 흰 배경 유지
+- 원본의 색감 톤 가능한 한 유지
+
+[변경할 것 — 표현 방식만]
+- 손그림 채색감(마카·수채·과슈·색연필) → 사실적 3D 렌더링
+- 종이 질감, 붓 자국, 채색 얼룩 → 매끈한 표면, 정밀한 재질 표현
+- 회화적 묘사 → 사진/제품 카탈로그 같은 정밀 표현
+
+[3D 렌더링 스타일 — 제품 카탈로그 톤]
+- Keyshot / Octane / Cinema 4D 같은 프리미엄 3D 렌더링 톤
+- 깨끗한 스튜디오 조명 (부드러운 GI, 광고용 비주얼)
+- 정확한 재질 표현:
+  · 금속: 반사·하이라이트·미세한 표면 디테일
+  · 플라스틱: 매끈한 표면, 부드러운 광택
+  · 유리/투명체: 정확한 굴절·반사·내부 비침
+  · 천/섬유: 직조 패턴, 부드러운 질감
+  · 가죽: 미세한 결, 자연스러운 광택
+  · 고무: 무광택, 거친 표면
+- 부드러운 자연스러운 그림자
+- 색감은 풍부하지만 과장되지 않게
+
+[배경 — 절대 흰 화지만]
+- 배경은 깨끗한 흰색 (#ffffff)
+- 나무·숲·산·풍경·하늘·구름·건물·도시 등 어떤 환경 요소도 절대 금지
+- 흐릿한 풍경·먼 실루엣도 금지
+
+[화면 모서리 규칙]
+- 화면의 네 꼭짓점(좌상·우상·좌하·우하) 중 최대 2곳만 가리고, 2곳 이상은 흰 여백 유지
+- 원본이 이 규칙을 따랐다면 그대로 유지
+
+[규격]
+- 4:3 가로 비율 (1536x1024)
+- 글자·로고·워터마크·숫자·라벨 일체 금지
+- 판타지·게임 콘셉트 아트·일러스트 톤 금지
+- 정밀한 제품 비주얼 톤
+
+원본 이미지를 그대로 3D 렌더링으로 재현하는 것이 목표다. 새로운 구성을 만들지 말 것.`;
+
+
+// ============ 🎲 3D 변환 비율 선택 모달 ============
+function show3DRatioModal(id){
+  const card = document.getElementById(id);
+  if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
+  
+  const baseMeta = card._meta;
+  const baseRatio = baseMeta.aspectRatio || 'landscape';
+  const ratioLabel = {
+    landscape: '가로 (1536×1024)',
+    portrait:  '세로 (1024×1536)',
+    square:    '정사각 (1024×1024)'
+  };
+  
+  const opt = (ratio, title, sub, isOriginal) => `
+    <button class="ratio-pick" data-ratio="${ratio}" 
+      style="display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;
+             background:linear-gradient(180deg,#fff 0%,#f0f0f0 100%);
+             border:1px solid #dadada;border-radius:10px;cursor:pointer;
+             text-align:left;transition:all .12s;font-family:'Pretendard Variable',sans-serif;
+             margin-bottom:8px;">
+      <div style="width:40px;height:30px;background:linear-gradient(180deg,#f8f8f8,#e0e0e0);border:1px solid #c8c8c8;border-radius:4px;flex-shrink:0;
+                  ${ratio==='portrait'?'transform:rotate(90deg);':''}
+                  ${ratio==='square'?'width:32px;height:32px;':''}"></div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:800;color:#2a2a2a;">${title}${isOriginal?' <span style="font-size:11px;color:#7a7a7a;font-weight:600;margin-left:4px;">· 원본 그대로 (추천)</span>':''}</div>
+        <div style="font-size:11px;color:#7a7a7a;margin-top:2px;font-family:'JetBrains Mono',monospace;letter-spacing:0.3px;">${sub}</div>
+      </div>
+    </button>`;
+  
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section">
+      <h4 style="font-size:18px;margin-bottom:6px;">🎲 3D 렌더링 비율 선택</h4>
+      <div style="font-size:13px;color:#1a1a1a;line-height:1.6;margin-bottom:14px;">
+        원본 카드는 <strong>${ratioLabel[baseRatio] || baseRatio}</strong> 비율이에요.<br>
+        3D 변환 시 어떤 비율로 만들까요?
+      </div>
+      
+      ${opt(baseRatio, ratioLabel[baseRatio], '원본과 동일', true)}
+      ${baseRatio !== 'landscape' ? opt('landscape', '가로', '1536 × 1024  (4:3)', false) : ''}
+      ${baseRatio !== 'portrait' ? opt('portrait', '세로', '1024 × 1536  (3:4)', false) : ''}
+      ${baseRatio !== 'square' ? opt('square', '정사각', '1024 × 1024  (1:1)', false) : ''}
+      
+      <div style="margin-top:16px;text-align:right;">
+        <button class="result-btn" onclick="closeModal()" style="padding:9px 18px;">취소</button>
+      </div>
+    </div>
+  `;
+  
+  // 비율 선택 버튼 이벤트
+  document.querySelectorAll('.ratio-pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ratio = btn.dataset.ratio;
+      closeModal();
+      // 사용자가 비율을 선택하면 실제 변환 진행
+      setTimeout(() => convertTo3D(id, ratio), 100);
+    });
+    btn.addEventListener('mouseenter', () => {
+      btn.style.background = 'linear-gradient(180deg, #fafafa 0%, #e0e0e0 100%)';
+      btn.style.borderColor = '#c0c0c0';
+      btn.style.transform = 'translateY(-1px)';
+      btn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.06)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.background = 'linear-gradient(180deg,#fff 0%,#f0f0f0 100%)';
+      btn.style.borderColor = '#dadada';
+      btn.style.transform = '';
+      btn.style.boxShadow = '';
+    });
+  });
+  
+  document.getElementById('modal').classList.add('show');
+}
+
+async function convertTo3D(id, chosenRatio){
+  // chosenRatio가 없으면 모달로 비율 선택 먼저
+  if(!chosenRatio){
+    return show3DRatioModal(id);
+  }
+  
+  if(state.generating){ toast('생성 중입니다. 잠시 후 다시 시도해주세요'); return; }
+  
+  const card = document.getElementById(id);
+  if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
+  if(!card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
+  if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
+  
+  const baseMeta = card._meta;
+  const baseImg = card._img;
+  
+  // 3D 변환용 meta — 원본 이미지 한 장만 ref로 사용 (스타일 참고·보조소재·시험지정보 모두 제외)
+  // ★ 중요: baseMeta를 spread하지 않음. 스타일 참고가 따라가면 원본 무시하고 엉뚱한 결과가 나옴
+  const newMeta = {
+    // 원본 카드 추적용 메타만 가져옴
+    prompt: '🎲 ' + (baseMeta.prompt || '3D 변환'),
+    composition: '',
+    tone: baseMeta.tone || 'dynamic',
+    intent: baseMeta.intent || 'sibumjak',
+    whitespace: baseMeta.whitespace || 'normal',
+    effects: baseMeta.effects || 'none',
+    count: 1,
+    quality: baseMeta.quality || 'medium',
+    aspectRatio: chosenRatio,  // ★ 사용자가 선택한 비율 적용 ★
+    heavyMode: false,
+    // 스타일/보조/구도 참고는 ★ 전부 제외 ★
+    refs: [{
+      name: '3d-source.png',
+      mimeType: 'image/png',
+      dataUrl: baseImg.dataUrl,
+      base64: baseImg.dataUrl.split(',')[1]
+    }],
+    styleRefs: [],
+    compRefs: [],
+    supportSubjects: '',
+    examInfo: null,
+    // 3D 변환 메타
+    fullPrompt: RENDER_3D_PROMPT,
+    is3D: true,
+    sourceId: id,
+    sourceTabLabel: baseMeta.tabLabel || '원본',
+    tabLabel: '🎲 3D 렌더',
+    tab: baseMeta.tab === 'research' ? 'gidi' : (baseMeta.tab || 'gidi'),
+    timestamp: Date.now()
+  };
+  
+  state.generating = true;
+  document.body.classList.add('generating');
+  document.getElementById('genBtn').disabled = true;
+  
+  // 새 카드 placeholder 추가
+  const newId = 'r_' + Date.now() + '_3d';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  addPlaceholderCard(newId, newMeta, state.results.length + 1);
+  
+  toast('🎲 3D 렌더링 변환 중... (30~60초)');
+  
+  try {
+    // ★ 원본 이미지 한 장만 전달 (스타일 참고 등 추가 안 함) ★
+    const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
+    updateCard(newId, img, newMeta);
+    const record = {...newMeta, image: img, id: newId};
+    state.results.unshift(record);
+    dbSave(record).catch(e => console.error('저장 실패:', e));
+    document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
+    document.getElementById('clearAllBtn').style.display = 'block';
+    toast('🎲 3D 렌더링 변환 완료');
+  } catch(err){
+    console.error('3D 변환 실패:', err);
+    showError(newId, err.message);
+    toast('3D 변환 실패: ' + err.message);
+  }
+  
+  state.generating = false;
+  document.body.classList.remove('generating');  // 🌀 blob 정상화
+  document.getElementById('genBtn').disabled = false;
+}
+
+// ============ 재디렉팅 (방향 수정 재생성) ============
+const REDIRECT_OPTIONS = [
+  {key: 'whitespace', label: '여백 더 주기', icon: '⬜', hint: '소재 영역을 더 작게, 흰 여백 45% 이상 확보'},
+  {key: 'focus',      label: '주제부 더 크게', icon: '🎯', hint: '중심 소재를 화면의 40% 이상 차지하게 크게 배치'},
+  {key: 'less_repeat',label: '소재 반복 줄이기', icon: '➖', hint: '같은 소재 2개 이하, 원경 실루엣 1개 이하'},
+  {key: 'less_effects',label:'효과 줄이기', icon: '💧', hint: '물줄기·파편·선형 효과 거의 없이 소재 중심으로'},
+  {key: 'more_realistic',label:'더 입시 실기처럼', icon: '✏️', hint: '판타지·게임 느낌 완전 배제, 손그림 시범작 톤 강화'},
+  {key: 'more_dynamic',label:'더 역동적으로', icon: '⚡', hint: '운동감·사선 흐름·관통/충돌 연출 강화'},
+  {key: 'more_clean',  label:'더 정돈되게', icon: '◻', hint: '배치 정돈, 시각적 위계 명확, 산만함 제거'},
+  {key: 'clean_bg',    label:'배경 흰 화지로', icon: '⬜', hint: '나무·산·풍경 등 배경 요소 제거, 순백 화지만'},
+  {key: 'corner_air',  label:'모서리 여백 확보', icon: '▢', hint: '4개 꼭짓점 중 2개 이상은 깨끗한 흰 여백으로'}
+];
+
+const REDIRECT_INSTRUCTIONS = {
+  whitespace: '\n\n[추가 수정 지시 — 여백 강화]\n단, 여백을 더 많이 주세요. 화면의 약 45%는 깨끗한 흰 여백으로 남기고, 소재 영역을 더 작게 잡고 주변을 확실히 비울 것. 소재가 화면을 절반 이상 덮지 않게.',
+  focus: '\n\n[추가 수정 지시 — 주제부 강조]\n단, 주제(중심) 소재를 더 크고 명확하게 보이게 해주세요. 중심 소재가 화면의 40% 이상 영역을 차지하도록 크게 배치하고, 보조 요소들은 작고 약하게.',
+  less_repeat: '\n\n[추가 수정 지시 — 반복 축소]\n단, 같은 소재의 반복을 더 줄이세요. 원경 실루엣은 1개 이하, 같은 소재의 반복은 2개 이하로 제한. 불필요한 소재 증식 완전 금지.',
+  less_effects: '\n\n[추가 수정 지시 — 효과 축소]\n단, 물줄기·액체·파편·선형 효과를 거의 없거나 매우 최소한만 사용하세요. 소재 자체의 형태력과 재질로 표현. 효과가 보이더라도 주제 소재보다 약하게.',
+  more_realistic: '\n\n[추가 수정 지시 — 입시 실기 강화]\n단, 실제 입시 실기실에서 학생이 그린 시범작처럼 보이게 해주세요. 마카·수채·과슈·색연필 손그림 채색감을 더 강하게. 판타지/게임 콘셉트 아트/3D 렌더링 느낌 완전 배제.',
+  more_dynamic: '\n\n[추가 수정 지시 — 역동성 강화]\n단, 운동감과 사선 흐름을 더 강하게 표현해주세요. 소재가 관통·충돌·휘감김·회전하는 순간을 포착. 단, 주제 소재의 전체형 가독성과 여백은 유지.',
+  more_clean: '\n\n[추가 수정 지시 — 정돈 강화]\n단, 화면을 더 정돈되게 만들어주세요. 시각적 위계를 명확히, 산만한 요소 제거, 보조 소재는 작고 절제되게. 시선이 한 곳에 명확히 모이도록.',
+  clean_bg: '\n\n[추가 수정 지시 — 배경 정리]\n단, 배경을 완전히 깨끗한 흰 화지(순백색 #ffffff)로만 표현하세요. 나무·숲·산·언덕·하늘·구름·도시·건물·길·강·바다 등 어떤 풍경 요소도 그리지 말 것. 흐릿한 수채풍 환경 묘사·먼 실루엣·산수화 톤도 금지. 모든 소재는 흰 화지 위에 떠 있는 한 장면.',
+  corner_air: '\n\n[추가 수정 지시 — 모서리 여백]\n단, 화면의 네 꼭짓점(좌상·우상·좌하·우하) 중 최대 2곳만 소재로 가리고, 나머지 2곳 이상은 반드시 깨끗한 흰 여백으로 남겨주세요. 4개 모서리가 모두 채워진 답답한 구성 금지. 모서리 여백이 시선을 중심으로 모으는 핵심 역할.'
+};
+
+function showRedirectModal(id){
+  const card = document.getElementById(id);
+  if(!card?._meta) return;
+  
+  const optionsHtml = REDIRECT_OPTIONS.map(opt => `
+    <button class="redir-opt" data-redir-key="${opt.key}" data-redir-id="${id}" 
+      style="display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:12px 14px;border:1px solid var(--line);background:#fff;margin-bottom:6px;cursor:pointer;transition:all .12s;font-family:inherit;">
+      <span style="font-size:18px;flex-shrink:0;">${opt.icon}</span>
+      <span style="flex:1;min-width:0;">
+        <span style="display:block;font-size:12px;font-weight:800;color:var(--ink-1);margin-bottom:3px;">${opt.label}</span>
+        <span style="display:block;font-size:10px;color:var(--ink-3);line-height:1.4;">${opt.hint}</span>
+      </span>
+    </button>
+  `).join('');
+  
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section">
+      <h4>🔧 디렉팅 방향 수정</h4>
+      <div style="font-size:10px;color:var(--ink-3);margin-bottom:10px;font-family:'JetBrains Mono',monospace;line-height:1.4;">
+        기존 프롬프트에 수정 지시를 덧붙여 재생성합니다. 새 카드로 추가됨.
+      </div>
+      ${optionsHtml}
+    </div>
+  `;
+  
+  // 옵션 클릭 핸들러
+  document.querySelectorAll('.redir-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.redirKey;
+      const targetId = btn.dataset.redirId;
+      closeModal();
+      doRedirect(targetId, key);
+    });
+    btn.addEventListener('mouseenter', () => {
+      btn.style.background = 'var(--paper-2)';
+      btn.style.borderColor = 'var(--ink-1)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.background = '#fff';
+      btn.style.borderColor = 'var(--line)';
+    });
+  });
+  
+  document.getElementById('modal').classList.add('show');
+}
+
+async function doRedirect(id, key){
+  const card = document.getElementById(id);
+  if(!card?._meta || state.generating) return;
+  
+  const instruction = REDIRECT_INSTRUCTIONS[key];
+  if(!instruction){ toast('수정 옵션 오류'); return; }
+  
+  const opt = REDIRECT_OPTIONS.find(o => o.key === key);
+  
+  // 기존 메타를 베이스로, fullPrompt에 수정 지시 추가
+  const baseMeta = card._meta;
+  const newFullPrompt = (baseMeta.fullPrompt || '') + instruction;
+  const newMeta = {
+    ...baseMeta,
+    fullPrompt: newFullPrompt,
+    redirectFrom: id,
+    redirectType: key,
+    redirectLabel: opt ? opt.label : key,
+    timestamp: Date.now()
+  };
+  
+  state.generating = true;
+  document.getElementById('genBtn').disabled = true;
+  
+  // 새 카드로 추가
+  const newId = 'r_' + Date.now() + '_redir';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  addPlaceholderCard(newId, newMeta, state.results.length + 1);
+  
+  try {
+    const allRefs = [...newMeta.refs, ...(newMeta.styleRefs || [])];
+    const img = await callOpenAI(newMeta.fullPrompt, allRefs);
+    updateCard(newId, img, newMeta);
+    const record = {...newMeta, image: img, id: newId};
+    state.results.unshift(record);
+    dbSave(record).catch(e => console.error('저장 실패:', e));
+    document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
+    document.getElementById('clearAllBtn').style.display = 'block';
+    toast(`🔧 ${opt.label} 완료`);
+  } catch(err){
+    console.error(err);
+    showError(newId, err.message);
+    toast('재디렉팅 실패: ' + err.message);
+  }
+  
+  state.generating = false;
+  document.body.classList.remove('generating');  // 🌀 blob 정상화
+  document.getElementById('genBtn').disabled = false;
+}
+
+function showInfo(id){
+  const card = document.getElementById(id);
+  if(!card?._meta) return;
+  const m = card._meta;
+  
+  // Heavy 디렉팅 결과가 있으면 별도 섹션
+  let heavySection = '';
+  if(m.heavyMode && m.heavyResult){
+    const h = m.heavyResult;
+    const a = h.analysis || {};
+    const e = h.evaluation || {};
+    
+    // 분석 요약
+    const features = (a.material_features || []).map(s => '  • ' + s).join('\n');
+    const rhythm = (a.form_rhythm || a.detail_emphasis || []).map(s => '  • ' + s).join('\n');
+    const risks = (a.risk_points || []).map(s => '  • ' + s).join('\n');
+    
+    // 후보 카드
+    const candidatesHtml = (a.candidates || []).map(c => {
+      const evalItem = (e.evaluations || []).find(ev => ev.id === c.id);
+      const score = evalItem ? evalItem.score : '?';
+      const isSelected = e.selected === c.id;
+      const star = isSelected ? '★ ' : '';
+      const headerColor = isSelected ? '#c0392b' : 'var(--ink-3)';
+      const borderColor = isSelected ? '#c0392b' : 'var(--ink-3)';
+      
+      const detailLines = [];
+      if(c.main_subject_placement) detailLines.push('중심 배치: ' + c.main_subject_placement);
+      if(c.near_treatment) detailLines.push('근경: ' + c.near_treatment);
+      if(c.mid_treatment) detailLines.push('중경: ' + c.mid_treatment);
+      if(c.far_treatment) detailLines.push('원경: ' + c.far_treatment);
+      if(c.whitespace_position) detailLines.push('여백: ' + c.whitespace_position);
+      if(c.eye_movement) detailLines.push('시선: ' + c.eye_movement);
+      if(c.effects_use) detailLines.push('효과: ' + c.effects_use);
+      if(c.encounter_type) detailLines.push('만남방식: ' + c.encounter_type);
+      if(c.axis_contrast) detailLines.push('축 대비: ' + c.axis_contrast);
+      if(c.main_focus) detailLines.push('중심: ' + c.main_focus);
+      if(c.detail_priority) detailLines.push('디테일: ' + c.detail_priority);
+      const strengths = (c.strengths || []).map(s => '  + ' + s).join('\n');
+      const cRisks = (c.risks || []).map(s => '  - ' + s).join('\n');
+      
+      return `<div style="border:1px solid ${borderColor};padding:10px 12px;margin-bottom:8px;background:${isSelected ? '#fff3f1' : 'var(--paper-1)'};">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+          <strong style="color:${headerColor};font-size:12px;">${star}${c.id}안 — ${escapeHtml(c.name || '')}</strong>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${headerColor};">${score}/100</span>
+        </div>
+        <pre style="border-left-color:${borderColor};margin-bottom:6px;font-size:10px;">${escapeHtml(detailLines.join('\n'))}</pre>
+        ${strengths ? `<pre style="border-left-color:#1e7e34;margin-bottom:4px;font-size:10px;">${escapeHtml(strengths)}</pre>` : ''}
+        ${cRisks ? `<pre style="border-left-color:#c0392b;font-size:10px;">${escapeHtml(cRisks)}</pre>` : ''}
+        ${evalItem ? `<div style="font-size:10px;color:var(--ink-3);margin-top:6px;font-style:italic;">평가: ${escapeHtml(evalItem.reason || '')}</div>` : ''}
+      </div>`;
+    }).join('');
+    
+    heavySection = `
+      <div class="modal-section">
+        <h4>🎬 디렉터 모드 결과</h4>
+        <div style="background:#fff3f1;border:1px solid #c0392b;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:11px;font-weight:700;color:#c0392b;margin-bottom:4px;">선택: ${e.selected}안</div>
+          <div style="font-size:10px;color:var(--ink-1);line-height:1.5;">${escapeHtml(e.selection_reason || '')}</div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <h4>📋 소재 깊이 분석</h4>
+        <pre style="border-left-color:#1e7e34;font-size:10px;">중심 소재: ${escapeHtml(a.main_subject || '')}
+보조 소재: ${escapeHtml((a.support_subjects || []).join(', '))}
+
+[재질 특징]
+${escapeHtml(features)}
+
+[형태 리듬·디테일]
+${escapeHtml(rhythm)}
+
+${a.must_show_whole_form ? '[전체형 필수 부위]\n  • ' + escapeHtml(a.must_show_whole_form) + '\n\n' : ''}[주의점]
+${escapeHtml(risks)}</pre>
+      </div>
+      <div class="modal-section">
+        <h4>🎨 구성 후보 3안 + 평가</h4>
+        ${candidatesHtml}
+      </div>
+    `;
+  }
+  
+  const analysisSection = (!m.heavyMode && m.analysis) 
+    ? `<div class="modal-section">
+        <h4>🔍 입시 강사 분석 (구성안)</h4>
+        <pre style="border-left-color:#1e7e34;">${escapeHtml(m.analysis)}</pre>
+      </div>`
+    : '';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section">
+      <h4>제시어</h4>
+      <pre>${escapeHtml(m.prompt || '(자유주제)')}</pre>
+    </div>
+    <div class="modal-section">
+      <h4>설정</h4>
+      <pre>모드        : ${m.tabLabel}${m.tab === 'soyang' ? `\n연출 흐름   : ${m.tone === 'static' ? '정적 (균형·안정)' : '동적 (움직임·흐름)'}` : ''}${m.tab !== 'research' ? `\n결과물 성격 : ${({balsang:'발상용 레퍼런스', sibumjak:'입시 시범작', seolmyeong:'학생 설명용'})[m.intent || 'sibumjak']}\n여백        : ${({less:'적게 (20%)', normal:'보통 (30%)', more:'많이 (40%)'})[m.whitespace || 'normal']}\n물줄기·효과 : ${({none:'없음', low:'약 (최소)', high:'강 (통제된 범위)'})[m.effects || 'low']}` : ''}
+구도        : ${m.composition || '(미지정 - 강사 분석 추천)'}
+구도 참고   : ${(m.compRefs?.length || 0)}장
+품질        : ${m.quality || 'medium'}
+디렉팅 모드 : ${m.heavyMode ? '🎬 Heavy (5단계 파이프라인)' : '일반'}${m.is3D ? '\n변환 방식    : 🎲 3D 렌더링 (원본: ' + (m.sourceTabLabel || '?') + ')' : ''}
+참고 이미지 : ${m.refs.length}장
+스타일 참고 : ${(m.styleRefs || []).length}장
+생성 시각   : ${new Date(m.timestamp).toLocaleString('ko-KR')}</pre>
+    </div>
+    ${m.supportSubjects ? `<div class="modal-section">
+      <h4>🧰 보조 소재</h4>
+      <pre>${escapeHtml(m.supportSubjects)}</pre>
+    </div>` : ''}
+    ${m.examInfo ? `<div class="modal-section">
+      <h4>📋 시험지 정보</h4>
+      <pre style="border-left-color:#c0392b;">${[
+        m.examInfo.university ? '🏫 대학: ' + m.examInfo.university : '',
+        m.examInfo.paperSize ? '📏 규격: ' + m.examInfo.paperSize : '',
+        m.examInfo.theme ? '💡 주제: ' + m.examInfo.theme : '',
+        m.examInfo.finalGoal ? '🎯 최종 목표: ' + m.examInfo.finalGoal : '',
+        m.examInfo.formatHint ? '📐 표현 형식: ' + m.examInfo.formatHint : ''
+      ].filter(Boolean).map(s => escapeHtml(s)).join('\n')}</pre>
+    </div>` : ''}
+    ${heavySection}
+    ${analysisSection}
+    <div class="modal-section">
+      <h4>${m.heavyMode ? '🎬 이미지 생성용 최종 압축 프롬프트' : '전체 프롬프트'}</h4>
+      <pre>${escapeHtml(m.fullPrompt)}</pre>
+    </div>
+  `;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+async function regenerate(id){
+  const card = document.getElementById(id);
+  if(!card?._meta || state.generating) return;
+  const meta = card._meta;
+  state.generating = true;
+  document.getElementById('genBtn').disabled = true;
+  
+  card.querySelector('.result-img-wrap').innerHTML = `
+    <span class="result-num">${card.querySelector('.result-num')?.textContent}</span>
+    <div class="result-loading"><div class="spinner"></div><div class="loading-text">REGENERATING...</div></div>
+  `;
+  
+  try {
+    const allRefs = [...meta.refs, ...(meta.styleRefs || [])];
+    const img = await callOpenAI(meta.fullPrompt, allRefs);
+    // 새 record로 저장 (기존은 유지, 새 ID로)
+    const newMeta = {...meta, timestamp: Date.now()};
+    updateCard(id, img, newMeta);
+    const record = {...newMeta, image: img, id};
+    
+    // 기존 record 업데이트
+    const idx = state.results.findIndex(r => r.id === id);
+    if(idx >= 0) state.results[idx] = record;
+    
+    dbSave(record).catch(e => console.error('저장 실패:', e));
+    toast('재생성 완료');
+  } catch(err){
+    showError(id, err.message);
+  }
+  state.generating = false;
+  document.body.classList.remove('generating');  // 🌀 blob 정상화
+  document.getElementById('genBtn').disabled = false;
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============ 라이트박스 (확대 + 핀치줌 + 팬) ============
+const lb = {
+  scale: 1,
+  panX: 0,
+  panY: 0,
+  startDist: 0,
+  startScale: 1,
+  startTouchX: 0,
+  startTouchY: 0,
+  startPanX: 0,
+  startPanY: 0,
+  lastTap: 0,
+  currentDataUrl: '',
+  currentMeta: null
+};
+
+function setupLightbox(){
+  const wrap = document.getElementById('lbImgWrap');
+  const img = document.getElementById('lbImg');
+  
+  // 닫기
+  document.getElementById('lbCloseBtn').addEventListener('click', closeLightbox);
+  document.getElementById('lbResetBtn').addEventListener('click', resetLightboxTransform);
+  document.getElementById('lbDlBtn').addEventListener('click', async () => {
+    if(!lb.currentDataUrl) return;
+    const safe = (lb.currentMeta?.prompt || 'image').replace(/[^가-힣a-z0-9]/gi,'_').slice(0,20);
+    const fname = `drawlab_${lb.currentMeta?.tab || 'img'}_${safe}_${Date.now()}.png`;
+    const du = lb.currentDataUrl;
+    const a = document.createElement('a');
+    try {
+      if(du && /^https?:/.test(du)){
+        const blob = await (await fetch(du)).blob();
+        const objUrl = URL.createObjectURL(blob);
+        a.href = objUrl; a.download = fname; a.click();
+        setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+      } else {
+        a.href = du; a.download = fname; a.click();
+      }
+      toast('다운로드 시작');
+    } catch(e){
+      console.error('다운로드 실패:', e);
+      window.open(du, '_blank');
+    }
+  });
+  
+  // 배경 클릭 시 닫기 (이미지 자체는 닫지 않음)
+  document.getElementById('lightbox').addEventListener('click', e => {
+    if(e.target.id === 'lightbox' || e.target.id === 'lbImgWrap'){
+      closeLightbox();
+    }
+  });
+  
+  // ESC 키
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && document.getElementById('lightbox').classList.contains('show')){
+      closeLightbox();
+    }
+  });
+  
+  // ===== 터치 이벤트 =====
+  wrap.addEventListener('touchstart', e => {
+    if(e.touches.length === 2){
+      e.preventDefault();
+      lb.startDist = getTouchDist(e.touches[0], e.touches[1]);
+      lb.startScale = lb.scale;
+    } else if(e.touches.length === 1){
+      lb.startTouchX = e.touches[0].clientX;
+      lb.startTouchY = e.touches[0].clientY;
+      lb.startPanX = lb.panX;
+      lb.startPanY = lb.panY;
+    }
+  }, {passive:false});
+  
+  wrap.addEventListener('touchmove', e => {
+    if(e.touches.length === 2){
+      e.preventDefault();
+      const newDist = getTouchDist(e.touches[0], e.touches[1]);
+      lb.scale = clamp(lb.startScale * (newDist / lb.startDist), 1, 6);
+      applyTransform();
+      showZoom();
+    } else if(e.touches.length === 1 && lb.scale > 1){
+      e.preventDefault();
+      lb.panX = lb.startPanX + (e.touches[0].clientX - lb.startTouchX);
+      lb.panY = lb.startPanY + (e.touches[0].clientY - lb.startTouchY);
+      applyTransform();
+    }
+  }, {passive:false});
+  
+  wrap.addEventListener('touchend', e => {
+    // 더블탭 감지
+    if(e.touches.length === 0 && e.changedTouches.length === 1){
+      const now = Date.now();
+      if(now - lb.lastTap < 300){
+        if(lb.scale === 1){
+          lb.scale = 2.5;
+        } else {
+          resetLightboxTransform();
+          return;
+        }
+        applyTransform(true);
+        showZoom();
+      }
+      lb.lastTap = now;
+    }
+  });
+  
+  // ===== 마우스 휠 줌 (데스크탑) =====
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = -e.deltaY / 400;
+    lb.scale = clamp(lb.scale + delta, 1, 6);
+    if(lb.scale === 1){lb.panX = 0; lb.panY = 0;}
+    applyTransform();
+    showZoom();
+  }, {passive:false});
+  
+  // ===== 마우스 드래그 팬 (데스크탑) =====
+  let isDragging = false;
+  wrap.addEventListener('mousedown', e => {
+    if(lb.scale <= 1) return;
+    isDragging = true;
+    lb.startTouchX = e.clientX;
+    lb.startTouchY = e.clientY;
+    lb.startPanX = lb.panX;
+    lb.startPanY = lb.panY;
+    wrap.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if(!isDragging) return;
+    lb.panX = lb.startPanX + (e.clientX - lb.startTouchX);
+    lb.panY = lb.startPanY + (e.clientY - lb.startTouchY);
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    wrap.style.cursor = lb.scale > 1 ? 'grab' : 'default';
+  });
+  
+  // ===== 데스크탑 더블클릭 줌 =====
+  wrap.addEventListener('dblclick', e => {
+    e.preventDefault();
+    if(lb.scale === 1){
+      lb.scale = 2.5;
+    } else {
+      resetLightboxTransform();
+      return;
+    }
+    applyTransform(true);
+    showZoom();
+  });
+}
+
+function getTouchDist(t1, t2){
+  const dx = t2.clientX - t1.clientX;
+  const dy = t2.clientY - t1.clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+function clamp(v, min, max){return Math.max(min, Math.min(max, v));}
+
+function applyTransform(animate){
+  const img = document.getElementById('lbImg');
+  if(animate) img.classList.add('transitioning');
+  else img.classList.remove('transitioning');
+  img.style.transform = `translate(${lb.panX}px, ${lb.panY}px) scale(${lb.scale})`;
+  document.getElementById('lbImgWrap').style.cursor = lb.scale > 1 ? 'grab' : 'default';
+  if(animate){
+    setTimeout(() => img.classList.remove('transitioning'), 250);
+  }
+}
+
+let zoomTimer;
+function showZoom(){
+  const z = document.getElementById('lbZoom');
+  z.textContent = Math.round(lb.scale * 100) + '%';
+  z.classList.add('show');
+  clearTimeout(zoomTimer);
+  zoomTimer = setTimeout(() => z.classList.remove('show'), 1200);
+}
+
+function resetLightboxTransform(){
+  lb.scale = 1;
+  lb.panX = 0;
+  lb.panY = 0;
+  applyTransform(true);
+}
+
+function openLightbox(dataUrl, meta){
+  lb.currentDataUrl = dataUrl;
+  lb.currentMeta = meta;
+  document.getElementById('lbImg').src = dataUrl;
+  document.getElementById('lbTitle').textContent = `${meta.tabLabel} · ${new Date(meta.timestamp).toLocaleDateString('ko-KR')}`;
+  document.getElementById('lbPrompt').textContent = meta.prompt || '자유주제';
+  resetLightboxTransform();
+  document.getElementById('lightbox').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.style.display = 'none', 2400);
+}
+</script>
+</body>
+</html>
