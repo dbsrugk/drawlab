@@ -1515,6 +1515,14 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
       </div>
     </div>
 
+    <div id="queueBar" style="display:none;align-items:center;gap:12px;padding:8px 16px;margin:0 0 4px;background:#fff5f5;border:1px solid #f0c0c0;border-radius:10px;font-size:12px;color:#1a1a1a;">
+      <span style="font-weight:800;color:#c0392b;">⏳ 대기열</span>
+      <span id="queueStat">대기 0 · 진행 0 · 완료 0</span>
+      <span style="flex:1;"></span>
+      <button class="history-clear" id="queuePauseBtn" onclick="toggleQueuePause()" style="padding:4px 10px;">⏸ 일시정지</button>
+      <button class="history-clear" id="queueCancelBtn" onclick="cancelQueue()" style="padding:4px 10px;border-color:#c0392b;color:#c0392b;">✕ 전체 취소</button>
+    </div>
+
     <div id="emptyState" class="empty">
       <!-- 액체 Chrome Blob (SVG · 펑키 데코) -->
       <svg class="chrome-blob" id="chromeBlob" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -4055,6 +4063,7 @@ async function generate(){
   document.body.classList.remove('generating');  // 🌀 blob 정상화
   document.getElementById('genBtn').disabled = false;
   document.getElementById('genBtnText').textContent = '참고 이미지 생성';
+  if(typeof pumpQueue === 'function') pumpQueue();   // 대기열 있으면 이어서
 }
 
 async function callOpenAI(promptText, refs){
@@ -4549,26 +4558,28 @@ function show3DRatioModal(id){
   document.getElementById('modal').classList.add('show');
 }
 
-async function convertTo3D(id, chosenRatio){
+function convertTo3D(id, chosenRatio){
   // chosenRatio가 없으면 모달로 비율 선택 먼저
   if(!chosenRatio){
     return show3DRatioModal(id);
   }
-  
-  if(state.generating){ toast('생성 중입니다. 잠시 후 다시 시도해주세요'); return; }
-  
   const card = document.getElementById(id);
   if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
   if(!card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
   if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
-  
+  enqueueJob({ label: '🎲 ' + (card._meta.prompt || '3D'), run: () => _run3D(id, chosenRatio) });
+  toast('🎲 3D 대기열 추가 (대기 ' + genQueue.jobs.length + ')');
+}
+
+async function _run3D(id, chosenRatio){
+  const card = document.getElementById(id);
+  if(!card?._meta || !card?._img?.dataUrl) throw new Error('원본 카드를 찾을 수 없음');
+
   const baseMeta = card._meta;
   const baseImg = card._img;
-  
-  // 3D 변환용 meta — 원본 이미지 한 장만 ref로 사용 (스타일 참고·보조소재·시험지정보 모두 제외)
-  // ★ 중요: baseMeta를 spread하지 않음. 스타일 참고가 따라가면 원본 무시하고 엉뚱한 결과가 나옴
+  const isData = baseImg.dataUrl.startsWith('data:');
+
   const newMeta = {
-    // 원본 카드 추적용 메타만 가져옴
     prompt: '🎲 ' + (baseMeta.prompt || '3D 변환'),
     composition: '',
     tone: baseMeta.tone || 'dynamic',
@@ -4577,20 +4588,15 @@ async function convertTo3D(id, chosenRatio){
     effects: baseMeta.effects || 'none',
     count: 1,
     quality: baseMeta.quality || 'medium',
-    aspectRatio: chosenRatio,  // ★ 사용자가 선택한 비율 적용 ★
+    aspectRatio: chosenRatio,
     heavyMode: false,
-    // 스타일/보조/구도 참고는 ★ 전부 제외 ★
     refs: [{
       name: '3d-source.png',
       mimeType: 'image/png',
       dataUrl: baseImg.dataUrl,
-      base64: baseImg.dataUrl.split(',')[1]
+      base64: isData ? baseImg.dataUrl.split(',')[1] : undefined
     }],
-    styleRefs: [],
-    compRefs: [],
-    supportSubjects: '',
-    examInfo: null,
-    // 3D 변환 메타
+    styleRefs: [], compRefs: [], supportSubjects: '', examInfo: null,
     fullPrompt: RENDER_3D_PROMPT,
     is3D: true,
     sourceId: id,
@@ -4599,21 +4605,17 @@ async function convertTo3D(id, chosenRatio){
     tab: baseMeta.tab === 'research' ? 'gidi' : (baseMeta.tab || 'gidi'),
     timestamp: Date.now()
   };
-  
-  state.generating = true;
-  document.body.classList.add('generating');
-  document.getElementById('genBtn').disabled = true;
-  
-  // 새 카드 placeholder 추가
+
+  const prevRatio = state.aspectRatio;
+  state.aspectRatio = chosenRatio;   // ★ 선택 비율 적용 (끝나면 복구)
+
   const newId = 'r_' + Date.now() + '_3d';
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('results').style.display = 'grid';
   addPlaceholderCard(newId, newMeta, state.results.length + 1);
-  
-  toast('🎲 3D 렌더링 변환 중... (30~60초)');
-  
+  toast('🎲 3D 렌더링 변환 중...');
+
   try {
-    // ★ 원본 이미지 한 장만 전달 (스타일 참고 등 추가 안 함) ★
     const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
     updateCard(newId, img, newMeta);
     const record = {...newMeta, image: img, id: newId};
@@ -4621,54 +4623,167 @@ async function convertTo3D(id, chosenRatio){
     dbSave(record).catch(e => console.error('저장 실패:', e));
     document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
     document.getElementById('clearAllBtn').style.display = 'block';
-    toast('🎲 3D 렌더링 변환 완료');
   } catch(err){
-    console.error('3D 변환 실패:', err);
     showError(newId, err.message);
-    toast('3D 변환 실패: ' + err.message);
+    state.aspectRatio = prevRatio;
+    throw err;
   }
-  
+  state.aspectRatio = prevRatio;
+}
+
+// ============ ⏳ 생성 대기열(큐) ============
+const genQueue = {
+  jobs: [],        // {label, run, attempts}
+  running: false,
+  paused: false,
+  done: 0
+};
+
+function renderQueueBar(){
+  const bar = document.getElementById('queueBar');
+  if(!bar) return;
+  const waiting = genQueue.jobs.length;
+  const active = genQueue.running ? 1 : 0;
+  if(waiting === 0 && active === 0){
+    bar.style.display = 'none';
+    genQueue.done = 0;   // 큐 비면 완료 카운트 리셋
+    return;
+  }
+  bar.style.display = 'flex';
+  document.getElementById('queueStat').textContent =
+    `대기 ${waiting} · 진행 ${active} · 완료 ${genQueue.done}` + (genQueue.paused ? ' · ⏸ 일시정지됨' : '');
+}
+
+function enqueueJob(job){
+  job.attempts = 0;
+  genQueue.jobs.push(job);
+  renderQueueBar();
+  pumpQueue();
+}
+
+async function pumpQueue(){
+  if(genQueue.running || genQueue.paused) return;
+  if(state.generating) return;          // 메인 생성 중이면 끝난 뒤 재개
+  const job = genQueue.jobs.shift();
+  if(!job){ renderQueueBar(); return; }
+
+  genQueue.running = true;
+  state.generating = true;
+  document.body.classList.add('generating');
+  document.getElementById('genBtn').disabled = true;
+  renderQueueBar();
+
+  let ok = true;
+  try {
+    await job.run();
+  } catch(e){
+    ok = false;
+    console.error('큐 작업 실패:', e);
+    const msg = (e && e.message) || '';
+    // 429/rate limit → 최대 2회 자동 재시도 (지연 후 다시 큐 앞에)
+    if(/429|rate.?limit|too many/i.test(msg) && job.attempts < 2){
+      job.attempts++;
+      genQueue.jobs.unshift(job);
+      toast(`⏳ 혼잡 — ${job.attempts}차 재시도 대기 중...`);
+      await new Promise(r => setTimeout(r, 8000 * job.attempts));
+    } else {
+      toast('작업 실패: ' + msg);
+    }
+  }
+
+  genQueue.running = false;
+  if(ok) genQueue.done++;
   state.generating = false;
-  document.body.classList.remove('generating');  // 🌀 blob 정상화
+  document.body.classList.remove('generating');
   document.getElementById('genBtn').disabled = false;
+  renderQueueBar();
+
+  if(!genQueue.paused) setTimeout(pumpQueue, 400);   // 다음 작업 (살짝 텀)
+}
+
+function toggleQueuePause(){
+  genQueue.paused = !genQueue.paused;
+  const btn = document.getElementById('queuePauseBtn');
+  if(btn) btn.textContent = genQueue.paused ? '▶ 재개' : '⏸ 일시정지';
+  renderQueueBar();
+  if(!genQueue.paused) pumpQueue();
+  toast(genQueue.paused ? '대기열 일시정지' : '대기열 재개');
+}
+
+function cancelQueue(){
+  if(genQueue.jobs.length === 0){ toast('대기 중인 작업이 없습니다'); return; }
+  const n = genQueue.jobs.length;
+  genQueue.jobs = [];
+  renderQueueBar();
+  toast(`대기 ${n}건 취소 (진행 중인 1건은 완료됩니다)`);
 }
 
 // ============ ⚡ 역동 변환 (소재의 역동적 순간) ============
-const DYNAMIC_PROMPT = `[Most important rule]
-Identify the single object shown in the attached reference sheet (the same object photographed from multiple angles). Render THAT exact object — same identity, color, material, proportions — but captured in ONE single dramatic DYNAMIC MOMENT. Do not invent a different object.
+const DYNAMIC_PROMPT = `Reference sheet for an art student studying a specific object AT THE PEAK OF A DRAMATIC DYNAMIC MOMENT. Photorealistic / high-quality 3D render style.
 
-[Goal]
-A single dramatic action shot (NOT a grid, NOT panels, NOT multiple cells) capturing the object at the peak of a characteristic dynamic event, frozen like a high-speed photograph. Automatically choose the most fitting dramatic moment for THIS specific object. Examples by object type:
-- balloon → the instant it bursts: rubber shredding and curling outward, fragments and a burst of air flying
-- pencil → snapping in half: splintered wood, graphite breaking, small chips flying out (or mid-stroke writing with motion streaks)
-- handkerchief / cloth / fabric → being torn apart: fibers ripping, fabric stretched and shredding
-- timer / clock / alarm → alarm going off: vibration/motion lines, the bell ringing, slight bounce, energy radiating outward
-- glass / bottle / cup → shattering: shards bursting outward with highlights
-- key / metal tool → falling and clattering, or spinning mid-air
-Pick whichever dramatic transformation best suits the identified object. If unsure, choose breaking / bursting / scattering motion.
+[Most important rule]
+Identify the single object shown in the attached reference sheet (the same object photographed from multiple angles). Render THAT exact object — same identity, color, material, proportions — but now caught in ONE chosen dramatic DYNAMIC event, shown consistently from many viewpoints.
 
-[Composition — dynamic basic-design energy]
-- Strong diagonal energy, clear sense of motion and force
-- The object and its fragments/effects floating in mid-air — NO ground, NO table, NO surface
-- Near / mid / far depth with dynamic foreshortening
-- Believable physics: flying fragments, debris, air puffs, stretching, vibration lines, splashes
-- Dramatic but clean studio lighting; highlights and reflections on the flying pieces
+[Choose ONE dynamic state — automatic]
+Automatically pick the most fitting dramatic moment for THIS object, and KEEP THE SAME state in every cell:
+- balloon → bursting (rubber shredding/curling outward, fragments + air burst)
+- pencil → snapping in half (splintered wood, graphite breaking, chips flying)
+- handkerchief / cloth → tearing apart (fibers ripping, fabric shredding)
+- timer / clock / alarm → alarm going off (vibration/motion lines, bell ringing, bouncing)
+- glass / bottle / cup → shattering (shards bursting outward)
+- key / metal tool → falling/clattering or spinning mid-air
+If unsure, choose breaking / bursting / scattering. CRITICAL: the SAME dynamic moment must appear in ALL cells (do NOT show it intact in one cell and broken in another — every cell shows the same dramatic state, just from a different angle).
 
-[Background — pure white only]
-- Clean pure white background (#ffffff). NO environment, scenery, sky, room, furniture, or props.
+[Layout — CRITICAL]
+A single square canvas (1:1) divided into a clean grid showing the SAME object IN THE SAME DYNAMIC STATE from multiple viewpoints:
+- ONE large hero image (biggest cell) showing the dramatic moment from its most characteristic 3/4 angle
+- EIGHT smaller grid cells around the hero, each the EXACT SAME dynamic moment from a different view:
+  1. Front view of the dynamic moment
+  2. Side view (profile) of the dynamic moment
+  3. DRAMATIC LOW-ANGLE 3-POINT PERSPECTIVE (worm's-eye, ultra-wide lens): strong exaggerated foreshortening (과투시), near part looming large, far part shrinking, verticals converging upward. Maximum dynamic energy.
+  4. Top-down view of the dynamic moment
+  5. DRAMATIC HIGH-ANGLE 3-POINT PERSPECTIVE (bird's-eye / 부감, ultra-wide lens): strong foreshortening (과투시), verticals converging downward, bold diagonal energy.
+  6. Three-quarter front view (raised angle)
+  7. Three-quarter back view (lowered angle)
+  8. Close-up detail of the action (fragments, tear edge, breaking point, shards)
 
-[Format / prohibitions]
-- ONE single dramatic scene only. Photorealistic / premium 3D render style, consistent with the reference's materials.
-- NO text, numbers, labels, logos, watermarks, grids, panels, or borders of any kind.
-- Keep the object's true identity and materials — it is simply now caught in a dramatic dynamic state.`;
+[Perspective note — cells 3 and 5]
+- Cells 3 and 5 use EXAGGERATED 3-point perspective (과투시) to push the dynamic energy further — strong wide-angle foreshortening + converging verticals, like Korean art-exam basic-design references.
+- The fragments, debris and motion should also follow this dramatic perspective.
+- CRITICAL: only the PERSPECTIVE is exaggerated. The object's true identity, proportions and materials stay accurate and consistent across all cells.
 
-async function convertToDynamic(id){
-  if(state.generating){ toast('생성 중입니다. 잠시 후 다시 시도해주세요'); return; }
+[Visual rules — strictly enforced]
+- SAME object, SAME materials, SAME single dynamic state in ALL views.
+- Plain pale neutral background (light gray #f0f0f0 or pure white) — same background in every cell.
+- Believable physics: flying fragments, debris, air puffs, stretching, vibration lines, shards.
+- Soft even studio lighting with crisp highlights on the flying pieces; minimal ground shadow, objects floating (no table).
+- Each cell separated by thin light gray dividers or clean white gutters; object + its fragments fit within each cell.
+- Photorealistic OR clean 3D product-render style. No painting, no illustration, no sketch.
 
+[Strict prohibitions]
+- NO text, labels, numbers, arrows, watermarks, dimensions, captions of any kind anywhere.
+- NO variation in object identity, color, or material between cells.
+- NO mixing intact vs broken across cells — every cell shows the SAME dynamic moment.
+- NO complex background, environment, scenery, or props.
+- NO hand-drawn or painterly look.
+
+[Purpose]
+A study reference sheet for an art student preparing to draw this object in a dramatic, dynamic basic-design composition — seeing the same energetic moment from every angle, including exaggerated 3-point perspective.`;
+
+// 클릭 → 큐에 등록 (블로킹 없음, 여러 개 연속 등록 가능)
+function convertToDynamic(id){
   const card = document.getElementById(id);
   if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
   if(!card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
   if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
+  enqueueJob({ label: '⚡ ' + (card._meta.prompt || '역동'), run: () => _runDynamic(id) });
+  toast('⚡ 역동 대기열 추가 (대기 ' + genQueue.jobs.length + ')');
+}
+
+// 실제 역동 생성 작업 (큐에서 실행 — 생성 락은 pumpQueue가 관리)
+async function _runDynamic(id){
+  const card = document.getElementById(id);
+  if(!card?._meta || !card?._img?.dataUrl) throw new Error('원본 카드를 찾을 수 없음');
 
   const baseMeta = card._meta;
   const baseImg = card._img;
@@ -4676,48 +4791,31 @@ async function convertToDynamic(id){
 
   const newMeta = {
     prompt: '⚡ ' + (baseMeta.prompt || '역동'),
-    composition: '',
-    tone: 'dynamic',
+    composition: '', tone: 'dynamic',
     intent: baseMeta.intent || 'sibumjak',
     whitespace: baseMeta.whitespace || 'normal',
     effects: baseMeta.effects || 'none',
-    count: 1,
-    quality: baseMeta.quality || 'medium',
-    aspectRatio: 'landscape',
-    heavyMode: false,
-    refs: [{
-      name: 'dynamic-source.png',
-      mimeType: 'image/png',
-      dataUrl: baseImg.dataUrl,
-      base64: isData ? baseImg.dataUrl.split(',')[1] : undefined
-    }],
-    styleRefs: [],
-    compRefs: [],
-    supportSubjects: '',
-    examInfo: null,
-    fullPrompt: DYNAMIC_PROMPT,
-    isDynamic: true,
-    sourceId: id,
-    sourceTabLabel: baseMeta.tabLabel || '소재 자료',
+    count: 1, quality: baseMeta.quality || 'medium',
+    aspectRatio: 'square', heavyMode: false,
+    refs: [{ name: 'dynamic-source.png', mimeType: 'image/png',
+             dataUrl: baseImg.dataUrl,
+             base64: isData ? baseImg.dataUrl.split(',')[1] : undefined }],
+    styleRefs: [], compRefs: [], supportSubjects: '', examInfo: null,
+    fullPrompt: DYNAMIC_PROMPT, isDynamic: true,
+    sourceId: id, sourceTabLabel: baseMeta.tabLabel || '소재 자료',
     tabLabel: '⚡ 역동',
     tab: baseMeta.tab === 'research' ? 'gidi' : (baseMeta.tab || 'gidi'),
     timestamp: Date.now()
   };
 
-  state.generating = true;
-  document.body.classList.add('generating');
-  document.getElementById('genBtn').disabled = true;
-
-  // 출력 비율을 4:3 가로로 강제 (끝나면 복구)
   const prevRatio = state.aspectRatio;
-  state.aspectRatio = 'landscape';
+  state.aspectRatio = 'square';
 
   const newId = 'r_' + Date.now() + '_dyn';
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('results').style.display = 'grid';
   addPlaceholderCard(newId, newMeta, state.results.length + 1);
-
-  toast('⚡ 역동 장면 생성 중... (30~60초)');
+  toast('⚡ 역동 장면 생성 중...');
 
   try {
     const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
@@ -4727,17 +4825,12 @@ async function convertToDynamic(id){
     dbSave(record).catch(e => console.error('저장 실패:', e));
     document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
     document.getElementById('clearAllBtn').style.display = 'block';
-    toast('⚡ 역동 장면 완료');
   } catch(err){
-    console.error('역동 변환 실패:', err);
     showError(newId, err.message);
-    toast('역동 변환 실패: ' + err.message);
+    state.aspectRatio = prevRatio;
+    throw err;   // pumpQueue가 재시도 판단
   }
-
-  state.aspectRatio = prevRatio;   // 비율 복구
-  state.generating = false;
-  document.body.classList.remove('generating');
-  document.getElementById('genBtn').disabled = false;
+  state.aspectRatio = prevRatio;
 }
 
 // ============ 재디렉팅 (방향 수정 재생성) ============
