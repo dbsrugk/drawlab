@@ -4225,6 +4225,7 @@ function updateCard(id, img, meta){
         <button class="result-btn" data-act="info" data-id="${id}">정보</button>
         <button class="result-btn" data-act="re" data-id="${id}">다시</button>
         <button class="result-btn" data-act="redir" data-id="${id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
+        ${meta.tab === 'research' ? `<button class="result-btn" data-act="dyn" data-id="${id}" title="이 소재의 역동적인 순간(터짐·부러짐·울림 등)으로 변환" style="background:#c0392b;color:#fff;border-color:#c0392b;">⚡ 역동</button>` : ''}
         <button class="result-btn" data-act="to3d" data-id="${id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
         <button class="result-btn" data-act="del" data-id="${id}">×</button>
       </div>
@@ -4245,6 +4246,7 @@ function bindCardActions(card, id){
       else if(act === 're') regenerate(id);
       else if(act === 'redir') showRedirectModal(id);
       else if(act === 'to3d') convertTo3D(id);
+      else if(act === 'dyn') convertToDynamic(id);
       else if(act === 'del') deleteOne(id);
       else if(act === 'zoom'){
         if(card._img && card._meta) openLightbox(card._img.dataUrl, card._meta);
@@ -4283,6 +4285,7 @@ function addCompletedCard(rec, num){
         <button class="result-btn" data-act="info" data-id="${rec.id}">정보</button>
         <button class="result-btn" data-act="re" data-id="${rec.id}">다시</button>
         <button class="result-btn" data-act="redir" data-id="${rec.id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
+        ${rec.tab === 'research' ? `<button class="result-btn" data-act="dyn" data-id="${rec.id}" title="이 소재의 역동적인 순간(터짐·부러짐·울림 등)으로 변환" style="background:#c0392b;color:#fff;border-color:#c0392b;">⚡ 역동</button>` : ''}
         <button class="result-btn" data-act="to3d" data-id="${rec.id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
         <button class="result-btn" data-act="del" data-id="${rec.id}">×</button>
       </div>
@@ -4627,6 +4630,113 @@ async function convertTo3D(id, chosenRatio){
   
   state.generating = false;
   document.body.classList.remove('generating');  // 🌀 blob 정상화
+  document.getElementById('genBtn').disabled = false;
+}
+
+// ============ ⚡ 역동 변환 (소재의 역동적 순간) ============
+const DYNAMIC_PROMPT = `[Most important rule]
+Identify the single object shown in the attached reference sheet (the same object photographed from multiple angles). Render THAT exact object — same identity, color, material, proportions — but captured in ONE single dramatic DYNAMIC MOMENT. Do not invent a different object.
+
+[Goal]
+A single dramatic action shot (NOT a grid, NOT panels, NOT multiple cells) capturing the object at the peak of a characteristic dynamic event, frozen like a high-speed photograph. Automatically choose the most fitting dramatic moment for THIS specific object. Examples by object type:
+- balloon → the instant it bursts: rubber shredding and curling outward, fragments and a burst of air flying
+- pencil → snapping in half: splintered wood, graphite breaking, small chips flying out (or mid-stroke writing with motion streaks)
+- handkerchief / cloth / fabric → being torn apart: fibers ripping, fabric stretched and shredding
+- timer / clock / alarm → alarm going off: vibration/motion lines, the bell ringing, slight bounce, energy radiating outward
+- glass / bottle / cup → shattering: shards bursting outward with highlights
+- key / metal tool → falling and clattering, or spinning mid-air
+Pick whichever dramatic transformation best suits the identified object. If unsure, choose breaking / bursting / scattering motion.
+
+[Composition — dynamic basic-design energy]
+- Strong diagonal energy, clear sense of motion and force
+- The object and its fragments/effects floating in mid-air — NO ground, NO table, NO surface
+- Near / mid / far depth with dynamic foreshortening
+- Believable physics: flying fragments, debris, air puffs, stretching, vibration lines, splashes
+- Dramatic but clean studio lighting; highlights and reflections on the flying pieces
+
+[Background — pure white only]
+- Clean pure white background (#ffffff). NO environment, scenery, sky, room, furniture, or props.
+
+[Format / prohibitions]
+- ONE single dramatic scene only. Photorealistic / premium 3D render style, consistent with the reference's materials.
+- NO text, numbers, labels, logos, watermarks, grids, panels, or borders of any kind.
+- Keep the object's true identity and materials — it is simply now caught in a dramatic dynamic state.`;
+
+async function convertToDynamic(id){
+  if(state.generating){ toast('생성 중입니다. 잠시 후 다시 시도해주세요'); return; }
+
+  const card = document.getElementById(id);
+  if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
+  if(!card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
+  if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
+
+  const baseMeta = card._meta;
+  const baseImg = card._img;
+  const isData = baseImg.dataUrl.startsWith('data:');
+
+  const newMeta = {
+    prompt: '⚡ ' + (baseMeta.prompt || '역동'),
+    composition: '',
+    tone: 'dynamic',
+    intent: baseMeta.intent || 'sibumjak',
+    whitespace: baseMeta.whitespace || 'normal',
+    effects: baseMeta.effects || 'none',
+    count: 1,
+    quality: baseMeta.quality || 'medium',
+    aspectRatio: 'landscape',
+    heavyMode: false,
+    refs: [{
+      name: 'dynamic-source.png',
+      mimeType: 'image/png',
+      dataUrl: baseImg.dataUrl,
+      base64: isData ? baseImg.dataUrl.split(',')[1] : undefined
+    }],
+    styleRefs: [],
+    compRefs: [],
+    supportSubjects: '',
+    examInfo: null,
+    fullPrompt: DYNAMIC_PROMPT,
+    isDynamic: true,
+    sourceId: id,
+    sourceTabLabel: baseMeta.tabLabel || '소재 자료',
+    tabLabel: '⚡ 역동',
+    tab: baseMeta.tab === 'research' ? 'gidi' : (baseMeta.tab || 'gidi'),
+    timestamp: Date.now()
+  };
+
+  state.generating = true;
+  document.body.classList.add('generating');
+  document.getElementById('genBtn').disabled = true;
+
+  // 출력 비율을 4:3 가로로 강제 (끝나면 복구)
+  const prevRatio = state.aspectRatio;
+  state.aspectRatio = 'landscape';
+
+  const newId = 'r_' + Date.now() + '_dyn';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  addPlaceholderCard(newId, newMeta, state.results.length + 1);
+
+  toast('⚡ 역동 장면 생성 중... (30~60초)');
+
+  try {
+    const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
+    updateCard(newId, img, newMeta);
+    const record = {...newMeta, image: img, id: newId};
+    state.results.unshift(record);
+    dbSave(record).catch(e => console.error('저장 실패:', e));
+    document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
+    document.getElementById('clearAllBtn').style.display = 'block';
+    toast('⚡ 역동 장면 완료');
+  } catch(err){
+    console.error('역동 변환 실패:', err);
+    showError(newId, err.message);
+    toast('역동 변환 실패: ' + err.message);
+  }
+
+  state.aspectRatio = prevRatio;   // 비율 복구
+  state.generating = false;
+  document.body.classList.remove('generating');
   document.getElementById('genBtn').disabled = false;
 }
 
