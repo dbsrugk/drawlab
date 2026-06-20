@@ -2637,14 +2637,15 @@ const SOYANG_PROMPT = `한국 미대 입시 기초디자인의 '주제부 연출
 - 효과(물줄기·파편·튐)가 주제 소재보다 더 강하게 보이는 구성 금지{REF_PART}`;
 
 // ============ 소재 자료조사 (대표 + 다양한 각도) 프롬프트 ============
-const RESEARCH_PROMPT = `Reference sheet for an art student studying a specific object. Photorealistic / high-quality 3D render style.
+const RESEARCH_PROMPT = `Reference sheet for an art student studying a specific object. Photorealistic / high-quality 3D render style, with concise Korean analysis notes.
 
 [Subject — the ONE object to research]
 {PROMPT}
 
 [Layout — CRITICAL]
-A single square canvas (1:1) divided into a clean grid showing the SAME object from multiple viewpoints:
-- ONE large hero image (center or top, occupying the biggest cell) showing the object from its most characteristic 3/4 angle
+A single square canvas (1:1) divided into a clean editorial grid showing the SAME object from multiple viewpoints plus small analysis notes:
+- ONE large hero image (center or top, occupying the biggest cell) showing the object from its most characteristic 3/4 angle.
+- Add 3 to 5 short Korean callouts around the hero image with hand-drawn arrows. Analyze silhouette, central axis, repeated pattern, connection parts, thickness, texture, direction, or structure according to the object.
 - EIGHT smaller grid cells around the hero image, each showing a different view of the EXACT SAME object:
   1. Front view (straight-on, flat orthographic — for form study)
   2. Side view (profile, flat orthographic — for form study)
@@ -2654,6 +2655,13 @@ A single square canvas (1:1) divided into a clean grid showing the SAME object f
   6. Three-quarter front view (from a raised angle)
   7. Three-quarter back view (from a lowered angle)
   8. Close-up detail shot (showing texture, parts, mechanism)
+- Put a very short Korean caption under each small cell. Use natural labels such as 정면, 측면, 하단 구조, 상단 구조, 3/4 정면, 3/4 후면, 질감 확대, 연결부 확대, but adapt them to the material.
+
+[Analysis mini-sections]
+- Include a small color palette area with 5 circular chips sampled from the object. Add short Korean color names or tone notes.
+- Include a compact keyword strip with about 6 Korean keywords useful for art-exam drawing, such as 구조, 리듬, 반복, 질감, 방향성, 대비, 광택, 탄성, 속도감, 생명력. Choose what fits the object.
+- Include 2 tiny diagram-style sketches or icon diagrams: one for basic outer structure, one for texture/detail/connection structure.
+- Keep all notes short and readable. The visual references must remain the main focus.
 
 [Viewpoint note — cells 3 and 5]
 - Cells 3 and 5 are normal 3D angle views for understanding volume, depth, top planes, bottom planes, and structure.
@@ -2665,17 +2673,20 @@ A single square canvas (1:1) divided into a clean grid showing the SAME object f
 - Soft even studio lighting, minimal shadow, no harsh reflections.
 - Each cell separated by thin light gray dividers OR by clean white gutters.
 - The object centered within its own cell, sized so the full silhouette is visible (not cropped except the close-up detail).
-- Photorealistic OR clean 3D product-render style. No painting, no illustration, no sketch.
+- Photorealistic OR clean 3D product-render style for the reference images. Small diagrams and arrows may look hand-drawn.
+- Typography should feel like a clean Korean art-school material study sheet: black labels, small handwritten-style notes, subtle tape/sticker accents, off-white paper.
 
 [Strict prohibitions]
-- NO text, labels, numbers, arrows, watermarks, dimensions, captions of any kind anywhere in the image.
+- NO long paragraphs. Only short Korean labels, captions, keywords, and callouts.
+- NO English text in the final image.
+- NO watermarks, random numbers, fake UI, dimensions, or unrelated captions.
 - NO variation in object color, finish, or design between cells.
 - NO complex background, environment, scenery, or props.
 - NO hand-drawn or painterly look.
 - NO heavy dramatic lighting or moody shadows.
 
 [Purpose]
-This is a study reference sheet for an art student preparing to draw {PROMPT}. The student needs to see exactly what the object looks like from every angle in clean photo-reference style.{REF_PART}`;
+This is a study reference sheet for an art student preparing to draw {PROMPT}. The student needs to see exactly what the object looks like from every angle, while also understanding its form, structure, color, texture, and useful drawing keywords.{REF_PART}`;
 
 // ============ A4 세로형 소재 분석 보드 프롬프트 ============
 const BOARD_PROMPT = `A4 vertical design board / Korean art-school portfolio analysis poster.
