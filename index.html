@@ -302,6 +302,7 @@ input,textarea,select{font-family:inherit;}
 
 .result-img-wrap{position:relative;background:var(--paper-2);aspect-ratio:1.38/1;overflow:hidden;}
 .result-card.is-research .result-img-wrap{aspect-ratio:1/1;}
+.result-card.is-board .result-img-wrap{aspect-ratio:1/1.414;}
 .result-img-wrap img{width:100%;height:100%;object-fit:contain;transition:transform .3s ease;}
 .result-img-wrap[data-act="zoom"]:hover img{transform:scale(1.03);}
 .result-img-wrap[data-act="zoom"]::after{
@@ -1232,10 +1233,11 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
       <div class="section-head">
         <div class="section-title">공간 구성 <span>LAYOUT</span></div>
       </div>
-      <div class="count-row" id="layoutRow">
+      <div class="count-row" id="layoutRow" style="flex-wrap:wrap;">
         <div class="count-chip active" data-layout="full" onclick="setLayout('full')">🖼 전체 구성<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">화면 가득 · 근중원경</small></div>
         <div class="count-chip" data-layout="focal" onclick="setLayout('focal')">◎ 주제부 중심<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">개체 표현 · 관계성</small></div>
-        <div class="count-chip" data-layout="research" onclick="setLayout('research')">📚 소재 자료<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">대표 + 각도 8개 (과투시 2컷)</small></div>
+<div class="count-chip" data-layout="research" onclick="setLayout('research')">📚 소재 자료<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">대표 + 각도 8개</small></div>
+<div class="count-chip" data-layout="board" onclick="setLayout('board')">📋 분석 보드<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">A4 세로 포스터</small></div>
       </div>
       
       <!-- 비율 (LAYOUT 안에 통합 — 처음부터 보이게) -->
@@ -2646,16 +2648,16 @@ A single square canvas (1:1) divided into a clean grid showing the SAME object f
 - EIGHT smaller grid cells around the hero image, each showing a different view of the EXACT SAME object:
   1. Front view (straight-on, flat orthographic — for form study)
   2. Side view (profile, flat orthographic — for form study)
-  3. DRAMATIC LOW-ANGLE 3-POINT PERSPECTIVE (worm's-eye view): camera placed very low looking up, shot as if with an ultra-wide lens. Strong exaggerated foreshortening (과투시) — the near end of the object looms large and the far end shrinks sharply, vertical edges visibly converging upward toward a high vanishing point. Dynamic diagonal placement. This is the dramatic dimensional reference.
+  3. Low-angle 3D view (camera slightly below the object, showing its volume clearly)
   4. Top-down view (flat orthographic — for form study)
-  5. DRAMATIC HIGH-ANGLE 3-POINT PERSPECTIVE (bird's-eye / 부감 view): camera placed high looking down, ultra-wide lens. Strong exaggerated foreshortening (과투시) — near part large, far part shrinking sharply, vertical edges converging downward toward a low vanishing point. Bold diagonal placement. Second dramatic dimensional reference.
+  5. High-angle 3D view (camera above the object, showing top planes and depth clearly)
   6. Three-quarter front view (from a raised angle)
   7. Three-quarter back view (from a lowered angle)
   8. Close-up detail shot (showing texture, parts, mechanism)
 
-[Perspective note — cells 3 and 5]
-- Cells 3 and 5 use EXAGGERATED 3-point perspective (과투시) on purpose — strong wide-angle foreshortening and converging verticals, like Korean art-exam basic-design references.
-- CRITICAL: only the PERSPECTIVE is exaggerated (foreshortening + converging lines). The object's actual proportions, form, and structure must stay ACCURATE and consistent with the other cells — do NOT melt, bend, or warp the object itself.
+[Viewpoint note — cells 3 and 5]
+- Cells 3 and 5 are normal 3D angle views for understanding volume, depth, top planes, bottom planes, and structure.
+- Keep the object's actual proportions, form, and structure ACCURATE and consistent with the other cells — do NOT melt, bend, warp, or stylize the object.
 
 [Visual rules — strictly enforced]
 - The object MUST be identical across ALL views (same color, same model, same materials, same details). No variations, no color changes, no different products.
@@ -2674,6 +2676,66 @@ A single square canvas (1:1) divided into a clean grid showing the SAME object f
 
 [Purpose]
 This is a study reference sheet for an art student preparing to draw {PROMPT}. The student needs to see exactly what the object looks like from every angle in clean photo-reference style.{REF_PART}`;
+
+// ============ A4 세로형 소재 분석 보드 프롬프트 ============
+const BOARD_PROMPT = `A4 vertical design board / Korean art-school portfolio analysis poster.
+Create a finished poster-like material analysis board based on the uploaded exam sheet, theme sheet, or material photo.
+
+[Main subject]
+{PROMPT}
+
+[Core direction]
+- A4 portrait ratio, clean but hip editorial design.
+- White / off-white paper background.
+- Bold section numbers, black brush-label headers, point colors, hand-drawn arrows, tape/sticker elements.
+- Mix photo-reference style images, pencil sketches, marker rendering, diagrams, small notes, and editorial layout.
+- All text must be Korean, readable, clean, and short.
+- Do not make it look like a rigid textbook page. It should feel like a polished art-school portfolio analysis sheet.
+
+[Fixed composition — must follow exactly]
+
+01. 관찰 참고
+- Show 5 reference images of the material from useful views.
+- Put a short Korean caption under each image.
+- Use these roles, but adapt captions naturally to the material:
+  ① 정면
+  ② 측면
+  ③ 질감 클로즈업
+  ④ 움직임 또는 사용 장면
+  ⑤ 구조 클로즈업
+
+02. 형태 분석
+- Place a large sketch-rendering of the material in the center.
+- Style: pencil sketch + marker coloring + realistic light and shadow.
+- Add hand-drawn arrows analyzing the main form features.
+- Include notes about silhouette, curved/straight structure, repeated pattern, central axis, symmetry, proportion, thickness, joints, connection parts, and visible structure as appropriate.
+- On the right side, add two small structural diagrams:
+  1) 기본 구조 / 외형 구조
+  2) 단면 구조 / 분해 구조
+
+03. 질감 및 색상 분석
+- Show 3 texture close-up images.
+- Put a short Korean caption under each.
+- Add 5 to 6 circular color palette chips.
+- Include concise examples for shadow, highlight, gloss, reflection, wear, pattern, and color contrast based on the material.
+
+04. 특징 및 활용 포인트
+- Write 4 Korean bullet points useful for basic design or idea development.
+- Use points such as movement, rhythm, contrast, repetition, direction, structure, texture contrast, elasticity, speed, vitality, or stability, but choose only what fits the material.
+- Add a dynamic sketch at the bottom or right side showing the material being used, moving, cut, opened, bent, splashing, rotating, or interacting naturally according to the material.
+
+[Bottom keyword box]
+- Add about 8 Korean keywords that fit the material.
+- Example style: 구조, 리듬, 반복, 질감, 방향성, 생명력, 신선함, 방사형.
+
+[Important visual rules]
+- Use the uploaded image as the source for subject identity, color, structure, and exam/theme context.
+- If the uploaded image is an exam sheet, extract the main subject, supporting materials, and theme visually, then make the board about those materials.
+- If the uploaded image is a single material photo, make the board about that material.
+- Keep the board visually complete as one A4 poster.
+- No English section titles. Korean text only in the final image.
+- Avoid tiny unreadable paragraphs; use short captions, labels, and bullet notes.
+- Avoid random unrelated objects. Everything must support the material analysis.{REF_PART}`;
 
 
 // 연출 흐름 디테일
@@ -2762,6 +2824,23 @@ const ANALYZE_PROMPT_RESEARCH = `이 사진에 나오는 사물을 정확히 식
 예시: 가스 버너
 예시: 색소폰
 예시: 다이얼 전화기`;
+
+const ANALYZE_PROMPT_BOARD = `이 사진이 시험지/주제지라면 핵심 소재와 제시어를, 소재 사진이라면 핵심 소재 이름을 정확히 식별해서 A4 소재 분석 보드 제목으로 사용할 짧은 문구를 만들어주세요.
+
+매우 중요:
+- 이미지에 보이는 실제 소재를 우선
+- 시험지라면 대학명보다 소재/주제 중심
+- 사진에 없는 사물 추가 금지
+
+조건:
+- 20자 이내
+- 자연스러운 한국어
+- 다른 설명·따옴표·기호 없이 제목 문구만 답변
+
+예시:
+브로콜리 소재 분석
+가스 버너 구조 분석
+요요와 실의 리듬`;
 
 // ============ 시험지 사진 분석 프롬프트 ============
 const ANALYZE_PROMPT_EXAM = `당신은 한국 미대 입시 기초디자인 전문 강사이자 입시 디렉터입니다. 첨부된 이미지는 미대 입시 시험지(문제지)입니다.
@@ -2990,6 +3069,13 @@ const TIPS_RESEARCH = [
   ['주방','가스 버너'],
   ['악기','색소폰'],
   ['생활','다이얼 전화기']
+];
+const TIPS_BOARD = [
+  ['식물','브로콜리 소재 분석'],
+  ['도구','커터칼 구조 분석'],
+  ['주방','가스 버너 분석 보드'],
+  ['자연물','솔방울 형태 분석'],
+  ['기계','자전거 체인 분석']
 ];
 
 // ============ 초기화 ============
@@ -3285,7 +3371,7 @@ async function restoreSession(){
     
     // 옵션 복원 (UI 동기화)
     if(s.tab){
-      const layoutKey = s.tab === 'soyang' ? 'focal' : s.tab === 'research' ? 'research' : 'full';
+  const layoutKey = s.tab === 'soyang' ? 'focal' : s.tab === 'research' ? 'research' : s.tab === 'board' ? 'board' : 'full';
       if(typeof setLayout === 'function') setLayout(layoutKey);
     }
     if(s.tone){
@@ -3385,7 +3471,10 @@ async function deleteOne(id){
 }
 
 function renderTips(){
-  const tips = state.tab === 'gidi' ? TIPS_GIDI : state.tab === 'soyang' ? TIPS_SOYANG : TIPS_RESEARCH;
+  const tips = state.tab === 'gidi' ? TIPS_GIDI :
+               state.tab === 'soyang' ? TIPS_SOYANG :
+               state.tab === 'board' ? TIPS_BOARD :
+               TIPS_RESEARCH;
   document.getElementById('tipChips').innerHTML = tips.map(([label, text]) => 
     `<span class="tip-chip" data-text="${escapeHtml(text)}">${label}</span>`
   ).join('');
@@ -3396,9 +3485,10 @@ function renderTips(){
 
 // ============ 공간 구성 전환 ============
 function setLayout(layout){
-  // layout: 'full' (전체 구성) | 'focal' (주제부 중심) | 'research' (소재 자료조사)
+  // layout: 'full' (전체 구성) | 'focal' (주제부 중심) | 'research' (소재 자료조사) | 'board' (A4 분석 보드)
   if(layout === 'focal') state.tab = 'soyang';
   else if(layout === 'research') state.tab = 'research';
+  else if(layout === 'board') state.tab = 'board';
   else state.tab = 'gidi';
   
   // 칩 active 상태 토글
@@ -3408,46 +3498,51 @@ function setLayout(layout){
   
   const isFocal = layout === 'focal';
   const isResearch = layout === 'research';
+  const isBoard = layout === 'board';
+  const isReferenceMode = isResearch || isBoard;
   
   // 주제부 중심일 때만 톤(정적/동적) 표시
   const toneSection = document.getElementById('toneSection');
   if(toneSection) toneSection.style.display = isFocal ? 'block' : 'none';
   // 12원칙 표시는 전체 구성일 때만 (주제부, 자료조사는 숨김)
   const principlesBox = document.getElementById('principlesBox');
-  if(principlesBox) principlesBox.style.display = (isFocal || isResearch) ? 'none' : 'block';
+  if(principlesBox) principlesBox.style.display = (isFocal || isReferenceMode) ? 'none' : 'block';
   // 구도는 전체 구성·주제부 중심만 (자료조사는 의미 없으므로 숨김)
   const compositionSection = document.getElementById('compositionSection');
-  if(compositionSection) compositionSection.style.display = isResearch ? 'none' : 'block';
+  if(compositionSection) compositionSection.style.display = isReferenceMode ? 'none' : 'block';
   // 통제 옵션도 전체 구성·주제부 중심만 (자료조사는 사진풍이라 미적용)
   const controlSection = document.getElementById('controlSection');
-  if(controlSection) controlSection.style.display = isResearch ? 'none' : 'block';
+  if(controlSection) controlSection.style.display = isReferenceMode ? 'none' : 'block';
   // Heavy 디렉팅 토글도 동일 (research 모드에서 숨김)
   const heavyToggle = document.getElementById('heavyToggle');
-  if(heavyToggle) heavyToggle.style.display = isResearch ? 'none' : 'flex';
+  if(heavyToggle) heavyToggle.style.display = isReferenceMode ? 'none' : 'flex';
   // 스타일 참고도 동일 (research 모드에서 숨김)
   const styleSection = document.getElementById('styleSection');
-  if(styleSection) styleSection.style.display = isResearch ? 'none' : 'block';
+  if(styleSection) styleSection.style.display = isReferenceMode ? 'none' : 'block';
   
   // 라벨 업데이트
   const atelierLabel = document.getElementById('atelierLabel');
   if(atelierLabel) atelierLabel.textContent = 
     isFocal ? 'Atelier · 주제부 중심' :
+    isBoard ? 'Atelier · 분석 보드' :
     isResearch ? 'Atelier · 소재 자료' :
     'Atelier · 전체 구성';
   const emptyDesc = document.getElementById('emptyDesc');
   if(emptyDesc) emptyDesc.textContent = 
     isFocal ? '두 소재의 관계성을 보여주는 주제부 중심 시안을 생성하세요. (개체 표현)' :
+    isBoard ? '업로드한 시험지/소재 사진을 바탕으로 A4 세로형 소재 분석 보드를 생성하세요.' :
     isResearch ? '소재의 대표 이미지와 다양한 각도 8개를 한 장의 자료조사 시트로 생성하세요.' :
     '제시 소재로 입시 기초디자인 완성작 시안을 생성하세요.';
   const promptText = document.getElementById('promptText');
   if(promptText) promptText.placeholder = 
     isFocal ? '예: 가죽 가방과 빨대 케이스' :
+    isBoard ? '예: 브로콜리 소재 분석 보드' :
     isResearch ? '예: 가스 버너 (한 소재만)' :
     '예: 타자기, 안경, 펜, 잉크';
   if(typeof renderTips === 'function') renderTips();
   
   // 모드 전환 시 기본 비율 자동 (이전에 사용자가 명시 변경했어도 모드 바뀌면 재설정)
-  const defaultRatio = state.tab === 'research' ? 'square' : 'landscape';
+  const defaultRatio = state.tab === 'research' ? 'square' : state.tab === 'board' ? 'portrait' : 'landscape';
   state.aspectRatio = defaultRatio;
   document.querySelectorAll('#ratioRow .count-chip').forEach(c => {
     c.classList.toggle('active', c.dataset.ratio === defaultRatio);
@@ -3482,7 +3577,7 @@ function toggleHeavyMode(){
 
 // 하위 호환용 (기존 코드가 switchTab 호출하는 경우 대비)
 function switchTab(tab){
-  setLayout(tab === 'soyang' ? 'focal' : 'full');
+  setLayout(tab === 'soyang' ? 'focal' : tab === 'research' ? 'research' : tab === 'board' ? 'board' : 'full');
 }
 
 function toggleSection(headEl, event){
@@ -3724,6 +3819,7 @@ async function analyzeImages(){
   try {
     const analyzePrompt = state.tab === 'gidi' ? ANALYZE_PROMPT_GIDI :
                           state.tab === 'soyang' ? ANALYZE_PROMPT_SOYANG :
+                          state.tab === 'board' ? ANALYZE_PROMPT_BOARD :
                           ANALYZE_PROMPT_RESEARCH;
     
     const content = [
@@ -3881,7 +3977,11 @@ function confirmApplyExam(){
 function buildPrompt(analysis){
   let refPart = '';
   if(state.refs.length){
-    refPart += `\n\n[사물 참고 이미지 활용]\n첨부된 ${state.refs.length}장의 사물 참고 이미지에 등장하는 소재·요소·색감·분위기를 적극 차용하되, 한국 미대 입시 작품으로 재해석. 사진을 그대로 베끼지 말고 입시 작품 스타일로 변환.`;
+    if(state.tab === 'board'){
+      refPart += `\n\n[업로드 이미지 활용]\n첨부된 ${state.refs.length}장의 이미지를 시험지/주제지/소재사진으로 분석해 보드의 소재 정체성, 색상, 구조, 질감, 키워드, 관찰 컷에 반영한다. 이미지 속 실제 정보가 가장 우선이며, 없는 소재를 임의로 추가하지 않는다.`;
+    } else {
+      refPart += `\n\n[사물 참고 이미지 활용]\n첨부된 ${state.refs.length}장의 사물 참고 이미지에 등장하는 소재·요소·색감·분위기를 적극 차용하되, 한국 미대 입시 작품으로 재해석. 사진을 그대로 베끼지 말고 입시 작품 스타일로 변환.`;
+    }
   }
   if(state.styleRefs && state.styleRefs.length){
     refPart += `\n\n[🎨 스타일 참고 이미지 활용]\n별도로 첨부된 ${state.styleRefs.length}장의 스타일 참고 이미지에서 다음을 반영하라:\n- 채색감 (마카·수채·과슈·색연필 등 사용 방식)\n- 붓 터치와 표현 방식\n- 색조·톤·명도 대비 패턴\n- 디테일 묘사 방식\n- 전체적인 화풍·완성도 톤\n중요: 스타일 참고 이미지의 사물·구도·소재는 무시할 것. 오로지 '어떻게 그렸는지'(표현 방식, 필치, 채색 방법)만 차용. 우리 작품의 소재·구도는 본문에 명시된 것을 따른다.`;
@@ -3889,6 +3989,7 @@ function buildPrompt(analysis){
   
   const template = state.tab === 'gidi' ? GIDI_PROMPT :
                    state.tab === 'soyang' ? SOYANG_PROMPT :
+                   state.tab === 'board' ? BOARD_PROMPT :
                    RESEARCH_PROMPT;
   
   // 보조 소재 처리
@@ -3923,7 +4024,7 @@ function buildPrompt(analysis){
     .replace('{REF_PART}', refPart);
   
   // ===== 통제 옵션 치환 (gidi·soyang 모드만) =====
-  if(state.tab !== 'research'){
+  if(state.tab !== 'research' && state.tab !== 'board'){
     const intent = state.intent || 'sibumjak';
     const ws = state.whitespace || 'normal';
     const fx = state.effects || 'low';
@@ -3947,7 +4048,7 @@ function buildPrompt(analysis){
       result = result.replace('{ANALYSIS}', analysis || '');
     }
   }
-  // research 모드는 별도 치환 불필요 ({PROMPT}, {REF_PART}만 사용)
+  // research/board 모드는 별도 치환 불필요 ({PROMPT}, {REF_PART}만 사용)
   
   return result;
 }
@@ -3971,7 +4072,7 @@ async function generate(){
   let heavyResult = null;  // Heavy 모드일 때 분석/평가/최종 프롬프트 저장
   let fullPrompt = '';
   
-  if(state.heavyMode && state.tab !== 'research'){
+  if(state.heavyMode && state.tab !== 'research' && state.tab !== 'board'){
     // 🎬 Heavy 모드: 5단계 파이프라인
     try {
       heavyResult = await runHeavyDirecting((msg) => {
@@ -3989,7 +4090,7 @@ async function generate(){
       } catch(e2){ analysis = ''; }
       fullPrompt = buildPrompt(analysis);
     }
-  } else if(state.tab !== 'research'){
+  } else if(state.tab !== 'research' && state.tab !== 'board'){
     // 🔍 일반 모드: 짧은 분석 + buildPrompt
     document.getElementById('genBtnText').textContent = '소재 분석 중...';
     try {
@@ -4001,7 +4102,7 @@ async function generate(){
     }
     fullPrompt = buildPrompt(analysis);
   } else {
-    // research 모드: 분석 없이 곧장
+    // research/board 모드: 분석 없이 곧장
     fullPrompt = buildPrompt('');
   }
   
@@ -4012,6 +4113,7 @@ async function generate(){
     tab: state.tab,
     tabLabel: state.tab === 'gidi' ? '전체 구성' :
               state.tab === 'soyang' ? '주제부 중심' :
+              state.tab === 'board' ? '분석 보드' :
               '소재 자료',
     prompt: state.prompt,
     supportSubjects: state.supportSubjects,
@@ -4167,7 +4269,7 @@ async function callOpenAI(promptText, refs){
 // ============ 카드 ============
 function addPlaceholderCard(id, meta, num){
   const card = document.createElement('div');
-  card.className = 'result-card' + (meta.tab === 'research' ? ' is-research' : '');
+  card.className = 'result-card' + (meta.tab === 'research' ? ' is-research' : meta.tab === 'board' ? ' is-board' : '');
   card.id = id;
   card.innerHTML = `
     <div class="result-img-wrap">
@@ -4267,7 +4369,7 @@ function bindCardActions(card, id){
 // 저장된 카드 (히스토리에서 로드된 것)
 function addCompletedCard(rec, num){
   const card = document.createElement('div');
-  card.className = 'result-card' + (rec.tab === 'research' ? ' is-research' : '');
+  card.className = 'result-card' + (rec.tab === 'research' ? ' is-research' : rec.tab === 'board' ? ' is-board' : '');
   card.id = rec.id;
   card._meta = rec;
   card._img = rec.image;
@@ -4740,17 +4842,17 @@ A single square canvas (1:1) divided into a clean grid showing the SAME object I
 - EIGHT smaller grid cells around the hero, each the EXACT SAME dynamic moment from a different view:
   1. Front view of the dynamic moment
   2. Side view (profile) of the dynamic moment
-  3. DRAMATIC LOW-ANGLE 3-POINT PERSPECTIVE (worm's-eye, ultra-wide lens): strong exaggerated foreshortening (과투시), near part looming large, far part shrinking, verticals converging upward. Maximum dynamic energy.
+  3. Low-angle 3D view of the dynamic moment (camera slightly below the object, showing volume and underside clearly)
   4. Top-down view of the dynamic moment
-  5. DRAMATIC HIGH-ANGLE 3-POINT PERSPECTIVE (bird's-eye / 부감, ultra-wide lens): strong foreshortening (과투시), verticals converging downward, bold diagonal energy.
+  5. High-angle 3D view of the dynamic moment (camera above the object, showing top planes and depth clearly)
   6. Three-quarter front view (raised angle)
   7. Three-quarter back view (lowered angle)
   8. Close-up detail of the action (fragments, tear edge, breaking point, shards)
 
-[Perspective note — cells 3 and 5]
-- Cells 3 and 5 use EXAGGERATED 3-point perspective (과투시) to push the dynamic energy further — strong wide-angle foreshortening + converging verticals, like Korean art-exam basic-design references.
-- The fragments, debris and motion should also follow this dramatic perspective.
-- CRITICAL: only the PERSPECTIVE is exaggerated. The object's true identity, proportions and materials stay accurate and consistent across all cells.
+[Viewpoint note — cells 3 and 5]
+- Cells 3 and 5 are normal 3D angle views for understanding volume, top planes, bottom planes, and structure.
+- The fragments, debris and motion should remain believable from those normal viewpoints.
+- The object's true identity, proportions and materials stay accurate and consistent across all cells.
 
 [Visual rules — strictly enforced]
 - SAME object, SAME materials, SAME single dynamic state in ALL views.
@@ -4768,7 +4870,7 @@ A single square canvas (1:1) divided into a clean grid showing the SAME object I
 - NO hand-drawn or painterly look.
 
 [Purpose]
-A study reference sheet for an art student preparing to draw this object in a dramatic, dynamic basic-design composition — seeing the same energetic moment from every angle, including exaggerated 3-point perspective.`;
+A study reference sheet for an art student preparing to draw this object in a dramatic, dynamic basic-design composition — seeing the same energetic moment from flat views, normal 3D angle views, and close-up detail.`;
 
 // 클릭 → 큐에 등록 (블로킹 없음, 여러 개 연속 등록 가능)
 function convertToDynamic(id){
@@ -5050,7 +5152,7 @@ ${escapeHtml(risks)}</pre>
     </div>
     <div class="modal-section">
       <h4>설정</h4>
-      <pre>모드        : ${m.tabLabel}${m.tab === 'soyang' ? `\n연출 흐름   : ${m.tone === 'static' ? '정적 (균형·안정)' : '동적 (움직임·흐름)'}` : ''}${m.tab !== 'research' ? `\n결과물 성격 : ${({balsang:'발상용 레퍼런스', sibumjak:'입시 시범작', seolmyeong:'학생 설명용'})[m.intent || 'sibumjak']}\n여백        : ${({less:'적게 (20%)', normal:'보통 (30%)', more:'많이 (40%)'})[m.whitespace || 'normal']}\n물줄기·효과 : ${({none:'없음', low:'약 (최소)', high:'강 (통제된 범위)'})[m.effects || 'low']}` : ''}
+      <pre>모드        : ${m.tabLabel}${m.tab === 'soyang' ? `\n연출 흐름   : ${m.tone === 'static' ? '정적 (균형·안정)' : '동적 (움직임·흐름)'}` : ''}${(m.tab !== 'research' && m.tab !== 'board') ? `\n결과물 성격 : ${({balsang:'발상용 레퍼런스', sibumjak:'입시 시범작', seolmyeong:'학생 설명용'})[m.intent || 'sibumjak']}\n여백        : ${({less:'적게 (20%)', normal:'보통 (30%)', more:'많이 (40%)'})[m.whitespace || 'normal']}\n물줄기·효과 : ${({none:'없음', low:'약 (최소)', high:'강 (통제된 범위)'})[m.effects || 'low']}` : ''}
 구도        : ${m.composition || '(미지정 - 강사 분석 추천)'}
 구도 참고   : ${(m.compRefs?.length || 0)}장
 품질        : ${m.quality || 'medium'}
