@@ -4457,6 +4457,7 @@ function updateCard(id, img, meta){
         <button class="result-btn" data-act="info" data-id="${id}">정보</button>
         <button class="result-btn" data-act="re" data-id="${id}">다시</button>
         <button class="result-btn" data-act="redir" data-id="${id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
+        ${meta.tab === 'research' ? `<button class="result-btn" data-act="board" data-id="${id}" title="이 소재 자료 이미지를 바탕으로 A4 분석 보드 생성" style="background:#1e7e34;color:#fff;border-color:#1e7e34;">📋 분석</button>` : ''}
         ${meta.tab === 'research' ? `<button class="result-btn" data-act="dyn" data-id="${id}" title="이 소재의 역동적인 순간(터짐·부러짐·울림 등)으로 변환" style="background:#c0392b;color:#fff;border-color:#c0392b;">⚡ 역동</button>` : ''}
         <button class="result-btn" data-act="to3d" data-id="${id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
         <button class="result-btn" data-act="del" data-id="${id}">×</button>
@@ -4478,6 +4479,7 @@ function bindCardActions(card, id){
       else if(act === 're') regenerate(id);
       else if(act === 'redir') showRedirectModal(id);
       else if(act === 'to3d') convertTo3D(id);
+      else if(act === 'board') convertToAnalysisBoard(id);
       else if(act === 'dyn') convertToDynamic(id);
       else if(act === 'del') deleteOne(id);
       else if(act === 'zoom'){
@@ -4517,6 +4519,7 @@ function addCompletedCard(rec, num){
         <button class="result-btn" data-act="info" data-id="${rec.id}">정보</button>
         <button class="result-btn" data-act="re" data-id="${rec.id}">다시</button>
         <button class="result-btn" data-act="redir" data-id="${rec.id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
+        ${rec.tab === 'research' ? `<button class="result-btn" data-act="board" data-id="${rec.id}" title="이 소재 자료 이미지를 바탕으로 A4 분석 보드 생성" style="background:#1e7e34;color:#fff;border-color:#1e7e34;">📋 분석</button>` : ''}
         ${rec.tab === 'research' ? `<button class="result-btn" data-act="dyn" data-id="${rec.id}" title="이 소재의 역동적인 순간(터짐·부러짐·울림 등)으로 변환" style="background:#c0392b;color:#fff;border-color:#c0392b;">⚡ 역동</button>` : ''}
         <button class="result-btn" data-act="to3d" data-id="${rec.id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
         <button class="result-btn" data-act="del" data-id="${rec.id}">×</button>
@@ -4939,6 +4942,75 @@ function cancelQueue(){
   genQueue.jobs = [];
   renderQueueBar();
   toast(`대기 ${n}건 취소 (진행 중인 1건은 완료됩니다)`);
+}
+
+// ============ 📋 소재 자료 → A4 분석 보드 ============
+function convertToAnalysisBoard(id){
+  const card = document.getElementById(id);
+  if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
+  if(!card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
+  if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
+  enqueueJob({ label: '📋 ' + (card._meta.prompt || '분석 보드'), run: () => _runAnalysisBoard(id) });
+  toast('📋 분석 보드 대기열 추가 (대기 ' + genQueue.jobs.length + ')');
+}
+
+async function _runAnalysisBoard(id){
+  const card = document.getElementById(id);
+  if(!card?._meta || !card?._img?.dataUrl) throw new Error('원본 카드를 찾을 수 없음');
+
+  const baseMeta = card._meta;
+  const baseImg = card._img;
+  const isData = baseImg.dataUrl.startsWith('data:');
+  const subject = (baseMeta.prompt || '소재').replace(/^📋\s*/, '').trim();
+  const refPart = `\n\n[분석 기준 이미지]\n첨부된 이미지는 이미 생성된 소재 각도 레퍼런스 시트입니다. 이 이미지 안의 여러 각도, 디테일 컷, 색감, 구조 정보를 우선 분석해서 A4 분석 보드에 반영하세요. 원본 소재의 모델·색·재질·구조를 유지하고, 없는 사물을 추가하지 마세요.`;
+  const fullPrompt = BOARD_PROMPT
+    .replaceAll('{PROMPT}', subject || '소재')
+    .replace('{REF_PART}', refPart);
+
+  const newMeta = {
+    prompt: subject || '소재 분석 보드',
+    composition: '', tone: baseMeta.tone || 'dynamic',
+    intent: baseMeta.intent || 'seolmyeong',
+    whitespace: baseMeta.whitespace || 'normal',
+    effects: baseMeta.effects || 'none',
+    count: 1, quality: baseMeta.quality || 'medium',
+    aspectRatio: 'portrait', heavyMode: false,
+    refs: [{ name: 'analysis-source.png', mimeType: 'image/png',
+             dataUrl: baseImg.dataUrl,
+             base64: isData ? baseImg.dataUrl.split(',')[1] : undefined }],
+    styleRefs: [], compRefs: [], supportSubjects: '', examInfo: baseMeta.examInfo || null,
+    fullPrompt,
+    isAnalysisBoard: true,
+    sourceId: id,
+    sourceTabLabel: baseMeta.tabLabel || '소재 자료',
+    tabLabel: '분석 보드',
+    tab: 'board',
+    timestamp: Date.now()
+  };
+
+  const prevRatio = state.aspectRatio;
+  state.aspectRatio = 'portrait';
+
+  const newId = 'r_' + Date.now() + '_board';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  addPlaceholderCard(newId, newMeta, state.results.length + 1);
+  toast('📋 분석 보드 생성 중...');
+
+  try {
+    const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
+    updateCard(newId, img, newMeta);
+    const record = {...newMeta, image: img, id: newId};
+    state.results.unshift(record);
+    await dbSave(record);
+    document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
+    document.getElementById('clearAllBtn').style.display = 'block';
+  } catch(err){
+    showError(newId, err.message);
+    state.aspectRatio = prevRatio;
+    throw err;
+  }
+  state.aspectRatio = prevRatio;
 }
 
 // ============ ⚡ 역동 변환 (소재의 역동적 순간) ============
