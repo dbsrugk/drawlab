@@ -2723,50 +2723,62 @@ const SOYANG_PROMPT = `한국 미대 입시 기초디자인의 '주제부 연출
 - 효과(물줄기·파편·튐)가 주제 소재보다 더 강하게 보이는 구성 금지{REF_PART}`;
 
 // ============ 소재 자료조사 (대표 + 다양한 각도) 프롬프트 ============
-const RESEARCH_PROMPT = `Material reference sheet for an art student studying one object.
-Keep the main purpose as large, clear angle references. Add only short Korean explanation text under or beside each view.
+const RESEARCH_PROMPT = `Clean material angle reference sheet for an art student studying one object.
+The final image should look like a premium product-view grid with large clear images, like a catalog reference sheet, plus small Korean captions.
 
 [Subject — the ONE object to research]
 {PROMPT}
 
-[Layout — keep it close to the original angle sheet]
+[Layout — match this structure]
 Use a 1:1 square canvas with a clean white or off-white background.
-The layout should be a large reference grid, not a full analysis poster.
+Make the layout almost exactly like this:
+- Top half: ONE very large hero image of the object, 3/4 front view, occupying about 40% of the canvas height.
+- Middle row: THREE large cells:
+  1. 정면
+  2. 측면
+  3. 3/4 정면
+- Lower row: TWO large cells:
+  4. 상단
+  5. 3/4 후면
+- Bottom row: TWO large cells:
+  6. 후면
+  7. 디테일 확대
 
-- ONE large hero image at the top or center, showing the object from its most characteristic 3/4 view.
-- Around it, show 6 to 8 large angle/detail views of the EXACT SAME object.
-- Keep the image cells large. The object should be easy to inspect.
-- Add a short Korean caption under each image, 1 line only.
-- Add one very short Korean explanation line under the caption when useful, 8 to 16 Korean characters if possible.
+[Captions]
+- Put a small Korean caption under each smaller view.
+- Captions should be short and practical:
+  정면 — 전체 비례
+  측면 — 두께와 깊이
+  3/4 정면 — 입체감
+  상단 — 윗면 구조
+  3/4 후면 — 후면 볼륨
+  후면 — 뒷면 구조
+  디테일 확대 — 질감과 부품
+- Captions must be small. They should not dominate the image.
+- Do not add long explanations. No paragraphs.
 
-Suggested views:
-1. 정면 — 전체 비례 확인
-2. 측면 — 두께와 깊이
-3. 상단 — 윗면 구조
-4. 후면 — 뒷면 구조
-5. 3/4 정면 — 입체감
-6. 3/4 후면 — 후면 볼륨
-7. 질감 확대 — 표면 재질
-8. 구조 확대 — 부품/연결부
-
-[Small notes — subtle, not poster-like]
-- You may add a tiny bottom strip with 5 to 6 Korean keywords, but keep it small.
-- You may add 1 or 2 small arrows only if they help explain an important part.
-- Do NOT add big numbered sections like 01/02/03/04.
-- Do NOT add large analysis paragraphs, structural diagram boxes, or poster-style blocks. That belongs to the analysis board mode.
+[Image style]
+- Photorealistic or clean high-quality 3D product-render style.
+- The object MUST be identical across all views: same model, same color, same material, same details.
+- Large cells, clear silhouette, easy to inspect.
+- Thin white gutters or very light gray dividing lines between cells.
+- Soft even studio lighting, minimal shadow, plain white/off-white background.
 
 [Strict prohibitions]
-- NO long paragraphs. Only short Korean captions and tiny notes.
+- NO analysis poster layout.
+- NO section numbers like 01/02/03/04.
+- NO arrows, no brush labels, no stickers, no tape, no keyword boxes.
+- NO diagrams or sketch boxes.
+- NO long paragraphs. Only small Korean captions under the angle views.
 - NO English text in the final image.
 - NO watermarks, random numbers, fake UI, dimensions, or unrelated captions.
 - NO variation in object color, finish, or design between cells.
 - NO complex background, environment, scenery, or props.
-- NO full analysis-board layout. Keep large angle photos as the main focus.
-- NO full hand-drawn-only look; reference images should look realistic.
+- NO hand-drawn-only look; all main views should look realistic.
 - NO heavy dramatic lighting or moody shadows.
 
 [Purpose]
-This is a large-view material reference sheet for an art student preparing to draw {PROMPT}. The student should mainly see the object clearly from many angles, with short Korean explanations that help observation.{REF_PART}`;
+This is a large-view angle reference sheet for an art student preparing to draw {PROMPT}. The student should mainly see the object clearly from many angles, with only small Korean captions to identify each view.{REF_PART}`;
 
 // ============ A4 세로형 소재 분석 보드 프롬프트 ============
 const BOARD_PROMPT = `A4 portrait Korean art-school material analysis poster.
