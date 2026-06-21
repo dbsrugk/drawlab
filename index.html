@@ -2092,9 +2092,69 @@ function _lightRefs(arr){
   return Array.isArray(arr) ? arr.map(x => ({name: x && x.name, mimeType: x && x.mimeType})) : (arr || null);
 }
 
+async function localSave(record){
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(record);
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e){
+    console.error('로컬 저장 실패:', e);
+    toast('⚠️ 로컬 저장 실패 (콘솔 확인)');
+  }
+}
+
+async function localLoadAll(){
+  try {
+    const db = await openDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).getAll();
+      req.onsuccess = e => resolve(e.target.result || []);
+      req.onerror = e => reject(e.target.error);
+    });
+  } catch(e){
+    console.error('로컬 기록 로드 실패:', e);
+    return [];
+  }
+}
+
+async function localDelete(id){
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e){
+    console.error('로컬 삭제 실패:', e);
+  }
+}
+
+async function localClearAll(){
+  try {
+    const db = await openDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = e => reject(e.target.error);
+    });
+  } catch(e){
+    console.error('로컬 전체 삭제 실패:', e);
+  }
+}
+
 async function dbSave(record){
+  await localSave(record);
+
   const client = sb();
-  if(!client){ console.error('Supabase 미연결 — 저장 건너뜀'); return; }
+  if(!client){ console.warn('Supabase 미연결 — 로컬에만 저장됨'); return; }
   try {
     // 1) 출력 이미지 → Storage 업로드
     let image_url = null, image_path = null;
@@ -2135,27 +2195,40 @@ async function dbSave(record){
     if(error) throw error;
   } catch(e){
     console.error('Supabase save 실패:', e);
-    toast('⚠️ 클라우드 저장 실패 (콘솔 확인)');
+    toast('로컬 저장 완료 · 클라우드 저장 실패');
   }
 }
 
 async function dbLoadAll(){
+  const local = await localLoadAll();
   const client = sb();
-  if(!client) return [];
+  if(!client) return local;
   try {
-    const { data, error } = await client.from('drawlab_generations')
-      .select('payload').order('id', {ascending: false});
+    const { data, error } = await Promise.race([
+      client.from('drawlab_generations').select('payload').order('id', {ascending: false}),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('클라우드 로드 시간 초과')), 2500))
+    ]);
     if(error) throw error;
-    const recs = (data || []).map(r => r.payload).filter(Boolean);
+    const cloud = (data || []).map(r => r.payload).filter(Boolean);
+    const map = new Map();
+    [...local, ...cloud].forEach(r => {
+      if(!r || !r.id) return;
+      const prev = map.get(r.id);
+      if(!prev || (r.timestamp || 0) >= (prev.timestamp || 0)) map.set(r.id, r);
+    });
+    const recs = Array.from(map.values());
     recs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    cloud.forEach(r => { if(r && r.id) localSave(r); });
     return recs;
   } catch(e){
     console.error('Supabase load 실패:', e);
-    return [];
+    return local;
   }
 }
 
 async function dbDelete(id){
+  await localDelete(id);
+
   const client = sb();
   if(!client) return;
   try {
@@ -2168,6 +2241,8 @@ async function dbDelete(id){
 }
 
 async function dbClearAll(){
+  await localClearAll();
+
   const client = sb();
   if(!client) return;
   try {
