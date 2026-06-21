@@ -1236,7 +1236,7 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
       <div class="count-row" id="layoutRow" style="flex-wrap:wrap;">
         <div class="count-chip active" data-layout="full" onclick="setLayout('full')">🖼 전체 구성<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">화면 가득 · 근중원경</small></div>
         <div class="count-chip" data-layout="focal" onclick="setLayout('focal')">◎ 주제부 중심<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">개체 표현 · 관계성</small></div>
-<div class="count-chip" data-layout="research" onclick="setLayout('research')">📚 소재 자료<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">큰 각도컷 + 설명</small></div>
+<div class="count-chip" data-layout="research" onclick="setLayout('research')">📚 소재 자료<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">각도 + 분석 노트</small></div>
 <div class="count-chip" data-layout="board" onclick="setLayout('board')">📋 분석 보드<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">A4 세로 포스터</small></div>
       </div>
       
@@ -2094,16 +2094,10 @@ function _lightRefs(arr){
 
 async function localSave(record){
   try {
-    const localRecord = {
-      ...record,
-      refs: _lightRefs(record.refs),
-      compRefs: _lightRefs(record.compRefs),
-      styleRefs: _lightRefs(record.styleRefs)
-    };
     const db = await openDB();
     await new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(localRecord);
+      tx.objectStore(STORE).put(record);
       tx.oncomplete = () => resolve();
       tx.onerror = e => reject(e.target.error);
     });
@@ -2158,12 +2152,7 @@ async function localClearAll(){
 
 async function dbSave(record){
   await localSave(record);
-  dbSaveCloud(record).catch(e => {
-    console.error('클라우드 저장 백그라운드 실패:', e);
-  });
-}
 
-async function dbSaveCloud(record){
   const client = sb();
   if(!client){ console.warn('Supabase 미연결 — 로컬에만 저장됨'); return; }
   try {
@@ -2732,7 +2721,7 @@ The final image should look like a premium product-view grid with large clear im
 [Layout — match this structure]
 Use a 1:1 square canvas with a clean white or off-white background.
 Make the layout almost exactly like this:
-- Top half: ONE very large hero image of the object, 3/4 front view, occupying about 40% of the canvas height.
+- Top half: ONE very large hero image of the object, cleanly rendered, with enough white margin.
 - Middle row: THREE large cells:
   1. 정면
   2. 측면
@@ -2744,6 +2733,13 @@ Make the layout almost exactly like this:
   6. 후면
   7. 디테일 확대
 
+[Image direction]
+- Every view must show the SAME object, same color, same material, same design.
+- Keep the object large in each cell.
+- Use clean product-reference lighting and a neutral background.
+- Show flat views and natural 3D views only.
+- The detail crop should show a useful texture, joint, surface, button, fabric, grain, cut edge, or structure depending on the object.
+
 [Captions]
 - Put a small Korean caption under each smaller view.
 - Captions should be short and practical:
@@ -2754,15 +2750,7 @@ Make the layout almost exactly like this:
   3/4 후면 — 후면 볼륨
   후면 — 뒷면 구조
   디테일 확대 — 질감과 부품
-- Captions must be small. They should not dominate the image.
-- Do not add long explanations. No paragraphs.
-
-[Image style]
-- Photorealistic or clean high-quality 3D product-render style.
-- The object MUST be identical across all views: same model, same color, same material, same details.
-- Large cells, clear silhouette, easy to inspect.
-- Thin white gutters or very light gray dividing lines between cells.
-- Soft even studio lighting, minimal shadow, plain white/off-white background.
+- Adapt captions naturally to the object, but keep them short.
 
 [Strict prohibitions]
 - NO analysis poster layout.
@@ -2774,7 +2762,6 @@ Make the layout almost exactly like this:
 - NO watermarks, random numbers, fake UI, dimensions, or unrelated captions.
 - NO variation in object color, finish, or design between cells.
 - NO complex background, environment, scenery, or props.
-- NO hand-drawn-only look; all main views should look realistic.
 - NO heavy dramatic lighting or moody shadows.
 
 [Purpose]
@@ -2818,16 +2805,22 @@ Use four stacked editorial blocks below the title, with thin hand-drawn border l
   ④ 움직임 또는 사용 장면
   ⑤ 구조 클로즈업
 
-02. 형태 분석
+02. 형태 분석 + 구성 적용
 - This is the largest middle block.
 - Place a large sketch-rendering of the material in the center.
 - Style: pencil sketch + marker coloring + realistic light and shadow.
 - Add hand-drawn arrows analyzing the main form features.
 - Include notes about silhouette, curved/straight structure, repeated pattern, central axis, symmetry, proportion, thickness, joints, connection parts, and visible structure as appropriate.
+- Also explain how those form features can be used in a basic-design composition:
+  · which part can become the main focal point
+  · which part can be enlarged or cropped in the foreground
+  · which axis or curve can guide eye movement
+  · which repeated part can create rhythm
+  · where overlap, penetration, wrapping, unfolding, cutting, or rotation could happen
 - Put explanatory Korean notes on both left and right sides of the central sketch.
-- On the right side, add two small structural diagram boxes:
+- On the right side, add two small diagram boxes:
   1) 기본 구조 / 외형 구조
-  2) 단면 구조 / 분해 구조
+  2) 구성 활용 구조 (확대·절단·겹침·회전 중 소재에 맞는 방식)
 
 03. 질감 및 색상 분석
 - This block sits in the lower-left area.
@@ -2836,16 +2829,31 @@ Use four stacked editorial blocks below the title, with thin hand-drawn border l
 - Add 5 to 6 circular color palette chips.
 - Include concise examples for shadow, highlight, gloss, reflection, wear, pattern, and color contrast based on the material.
 
-04. 특징 및 활용 포인트
+04. 기초디자인 활용 포인트
 - This block sits in the lower-right area.
-- Write 4 Korean bullet points useful for basic design or idea development.
-- Use points such as movement, rhythm, contrast, repetition, direction, structure, texture contrast, elasticity, speed, vitality, or stability, but choose only what fits the material.
-- Add a dynamic sketch at the bottom or right side showing the material being used, moving, cut, opened, bent, splashing, rotating, or interacting naturally according to the material.
+- Write 4 Korean bullet points that are directly useful for making a basic-design composition, not just general use.
+- Each bullet should explain one composition strategy:
+  1) 주제부로 쓸 부분: 가장 크게 보여줄 핵심 부위
+  2) 화면 흐름: 사선, 곡선, 원형, 방사형, 반복 흐름 중 무엇이 어울리는지
+  3) 대비 전략: 재질 대비, 색 대비, 크기 대비, 면/선 대비, 정적/동적 대비
+  4) 연출 방법: 확대, 절단, 겹침, 관통, 감김, 분해, 회전, 튐, 흩어짐 중 소재에 맞는 방법
+- Add 2 to 3 small thumbnail sketches showing possible composition use:
+  · 근경 확대 컷
+  · 중경 주제부 배치
+  · 원경 반복/리듬 처리
+- Add one dynamic sketch at the bottom or right side showing how the material could move or be transformed in a basic-design scene.
 
 [Bottom keyword box]
 - Add a horizontal keyword box at the very bottom.
 - Include about 8 Korean keywords that fit the material.
-- Example style: 구조, 리듬, 반복, 질감, 방향성, 생명력, 신선함, 방사형.
+- Keywords should be composition-useful, not only descriptive.
+- Example style: 주제부, 확대, 절단, 겹침, 반복, 리듬, 대비, 방향성, 질감대비, 구조감, 운동감.
+
+[Composition-use priority]
+- This board is for Korean basic-design composition preparation.
+- It must help the student decide how to place the material on the page.
+- Include visual hints for foreground/midground/background, focal point, eye movement, cropping, repetition, and material contrast when appropriate.
+- Avoid only explaining "what the object is used for" in daily life. Focus on how to use its form in a drawing composition.
 
 [Important visual rules]
 - Use the uploaded image as the source for subject identity, color, structure, and exam/theme context.
@@ -4857,6 +4865,88 @@ async function _run3D(id, chosenRatio){
   state.aspectRatio = prevRatio;
 }
 
+function convertToAnalysisBoard(id){
+  const card = document.getElementById(id);
+  if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
+  if(!card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
+  if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
+  enqueueJob({ label: '📋 ' + (card._meta.prompt || '분석 보드'), run: () => _runAnalysisBoard(id) });
+  toast('📋 분석 보드 대기열 추가 (대기 ' + genQueue.jobs.length + ')');
+}
+
+async function _runAnalysisBoard(id){
+  const card = document.getElementById(id);
+  if(!card?._meta || !card?._img?.dataUrl) throw new Error('원본 카드를 찾을 수 없음');
+
+  const baseMeta = card._meta;
+  const baseImg = card._img;
+  const isData = baseImg.dataUrl.startsWith('data:');
+  const subject = (baseMeta.prompt || '소재').replace(/^📋\s*/, '').trim();
+  const refPart = `
+
+[분석 기준 이미지]
+첨부된 이미지는 이미 생성된 소재 각도 레퍼런스 시트입니다.
+이 이미지를 주요 시각 자료로 삼아 같은 소재의 형태, 각도, 질감, 구조를 읽고 A4 세로형 분석 보드로 재편집하세요.
+단, 원본 소재 자료처럼 큰 각도컷 그리드로 만들지 말고, 분석 보드 형식으로 제목·번호 섹션·화살표·도해·기초디자인 구성 포인트를 포함하세요.`;
+  const fullPrompt = BOARD_PROMPT
+    .replaceAll('{PROMPT}', subject || '소재')
+    .replace('{REF_PART}', refPart);
+
+  const newMeta = {
+    prompt: subject || '소재 분석 보드',
+    composition: '',
+    tone: baseMeta.tone || 'dynamic',
+    intent: baseMeta.intent || 'seolmyeong',
+    whitespace: baseMeta.whitespace || 'normal',
+    effects: baseMeta.effects || 'none',
+    count: 1,
+    quality: baseMeta.quality || 'medium',
+    aspectRatio: 'portrait',
+    heavyMode: false,
+    refs: [{
+      name: 'analysis-source.png',
+      mimeType: 'image/png',
+      dataUrl: baseImg.dataUrl,
+      base64: isData ? baseImg.dataUrl.split(',')[1] : undefined
+    }],
+    styleRefs: [],
+    compRefs: [],
+    supportSubjects: '',
+    examInfo: null,
+    fullPrompt,
+    isAnalysisBoard: true,
+    sourceId: id,
+    sourceTabLabel: baseMeta.tabLabel || '소재 자료',
+    tabLabel: '분석 보드',
+    tab: 'board',
+    timestamp: Date.now()
+  };
+
+  const prevRatio = state.aspectRatio;
+  state.aspectRatio = 'portrait';
+
+  const newId = 'r_' + Date.now() + '_board';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  addPlaceholderCard(newId, newMeta, state.results.length + 1);
+  toast('📋 A4 분석 보드 생성 중...');
+
+  try {
+    const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
+    updateCard(newId, img, newMeta);
+    const record = {...newMeta, image: img, id: newId};
+    state.results.unshift(record);
+    await dbSave(record);
+    document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
+    document.getElementById('clearAllBtn').style.display = 'block';
+  } catch(err){
+    showError(newId, err.message);
+    state.aspectRatio = prevRatio;
+    throw err;
+  }
+  state.aspectRatio = prevRatio;
+}
+
 // ============ ⏳ 생성 대기열(큐) ============
 const genQueue = {
   jobs: [],        // {label, run, attempts}
@@ -4942,75 +5032,6 @@ function cancelQueue(){
   genQueue.jobs = [];
   renderQueueBar();
   toast(`대기 ${n}건 취소 (진행 중인 1건은 완료됩니다)`);
-}
-
-// ============ 📋 소재 자료 → A4 분석 보드 ============
-function convertToAnalysisBoard(id){
-  const card = document.getElementById(id);
-  if(!card?._meta){ toast('카드 정보를 찾을 수 없습니다'); return; }
-  if(!card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
-  if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
-  enqueueJob({ label: '📋 ' + (card._meta.prompt || '분석 보드'), run: () => _runAnalysisBoard(id) });
-  toast('📋 분석 보드 대기열 추가 (대기 ' + genQueue.jobs.length + ')');
-}
-
-async function _runAnalysisBoard(id){
-  const card = document.getElementById(id);
-  if(!card?._meta || !card?._img?.dataUrl) throw new Error('원본 카드를 찾을 수 없음');
-
-  const baseMeta = card._meta;
-  const baseImg = card._img;
-  const isData = baseImg.dataUrl.startsWith('data:');
-  const subject = (baseMeta.prompt || '소재').replace(/^📋\s*/, '').trim();
-  const refPart = `\n\n[분석 기준 이미지]\n첨부된 이미지는 이미 생성된 소재 각도 레퍼런스 시트입니다. 이 이미지 안의 여러 각도, 디테일 컷, 색감, 구조 정보를 우선 분석해서 A4 분석 보드에 반영하세요. 원본 소재의 모델·색·재질·구조를 유지하고, 없는 사물을 추가하지 마세요.`;
-  const fullPrompt = BOARD_PROMPT
-    .replaceAll('{PROMPT}', subject || '소재')
-    .replace('{REF_PART}', refPart);
-
-  const newMeta = {
-    prompt: subject || '소재 분석 보드',
-    composition: '', tone: baseMeta.tone || 'dynamic',
-    intent: baseMeta.intent || 'seolmyeong',
-    whitespace: baseMeta.whitespace || 'normal',
-    effects: baseMeta.effects || 'none',
-    count: 1, quality: baseMeta.quality || 'medium',
-    aspectRatio: 'portrait', heavyMode: false,
-    refs: [{ name: 'analysis-source.png', mimeType: 'image/png',
-             dataUrl: baseImg.dataUrl,
-             base64: isData ? baseImg.dataUrl.split(',')[1] : undefined }],
-    styleRefs: [], compRefs: [], supportSubjects: '', examInfo: baseMeta.examInfo || null,
-    fullPrompt,
-    isAnalysisBoard: true,
-    sourceId: id,
-    sourceTabLabel: baseMeta.tabLabel || '소재 자료',
-    tabLabel: '분석 보드',
-    tab: 'board',
-    timestamp: Date.now()
-  };
-
-  const prevRatio = state.aspectRatio;
-  state.aspectRatio = 'portrait';
-
-  const newId = 'r_' + Date.now() + '_board';
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('results').style.display = 'grid';
-  addPlaceholderCard(newId, newMeta, state.results.length + 1);
-  toast('📋 분석 보드 생성 중...');
-
-  try {
-    const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
-    updateCard(newId, img, newMeta);
-    const record = {...newMeta, image: img, id: newId};
-    state.results.unshift(record);
-    await dbSave(record);
-    document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
-    document.getElementById('clearAllBtn').style.display = 'block';
-  } catch(err){
-    showError(newId, err.message);
-    state.aspectRatio = prevRatio;
-    throw err;
-  }
-  state.aspectRatio = prevRatio;
 }
 
 // ============ ⚡ 역동 변환 (소재의 역동적 순간) ============
