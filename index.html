@@ -2775,23 +2775,34 @@ Required zones:
 This is a study reference sheet for an art student preparing to draw {PROMPT}. It must teach the object's angles, form, structure, texture, color, and useful drawing keywords at a glance.{REF_PART}`;
 
 // ============ A4 세로형 소재 분석 보드 프롬프트 ============
-const BOARD_PROMPT = `A4 vertical design board / Korean art-school portfolio analysis poster.
+const BOARD_PROMPT = `A4 portrait Korean art-school material analysis poster.
 Create a finished poster-like material analysis board based on the uploaded exam sheet, theme sheet, or material photo.
+The composition must match this ratio and layout: tall A4 portrait poster, approximately 1:1.414, like a vertical portfolio board.
 
 [Main subject]
 {PROMPT}
 
 [Core direction]
-- A4 portrait ratio, clean but hip editorial design.
+- A4 portrait ratio. Tall vertical poster. Do NOT make it square, landscape, or loose collage.
 - White / off-white paper background.
 - Bold section numbers, black brush-label headers, point colors, hand-drawn arrows, tape/sticker elements.
 - Mix photo-reference style images, pencil sketches, marker rendering, diagrams, small notes, and editorial layout.
 - All text must be Korean, readable, clean, and short.
 - Do not make it look like a rigid textbook page. It should feel like a polished art-school portfolio analysis sheet.
 
+[Top title area — mandatory]
+- At the very top, create a large Korean hand-brushed title using the material name.
+- The title must be big and visible, like: 브로콜리 / 라디오 / 가스 버너.
+- Next to the title, add one short Korean subtitle sentence summarizing the material's character.
+  Example for broccoli: 작지만 강한 생명력, 자연의 완벽한 구조
+  Example for radio: 빈티지한 기계성, 목재와 금속의 대비
+- Add a small doodle, ink splash, leaf/line accent, or tape detail near the title.
+
 [Fixed composition — must follow exactly]
+Use four stacked editorial blocks below the title, with thin hand-drawn border lines.
 
 01. 관찰 참고
+- This block sits directly under the title.
 - Show 5 reference images of the material from useful views.
 - Put a short Korean caption under each image.
 - Use these roles, but adapt captions naturally to the material:
@@ -2802,27 +2813,32 @@ Create a finished poster-like material analysis board based on the uploaded exam
   ⑤ 구조 클로즈업
 
 02. 형태 분석
+- This is the largest middle block.
 - Place a large sketch-rendering of the material in the center.
 - Style: pencil sketch + marker coloring + realistic light and shadow.
 - Add hand-drawn arrows analyzing the main form features.
 - Include notes about silhouette, curved/straight structure, repeated pattern, central axis, symmetry, proportion, thickness, joints, connection parts, and visible structure as appropriate.
-- On the right side, add two small structural diagrams:
+- Put explanatory Korean notes on both left and right sides of the central sketch.
+- On the right side, add two small structural diagram boxes:
   1) 기본 구조 / 외형 구조
   2) 단면 구조 / 분해 구조
 
 03. 질감 및 색상 분석
+- This block sits in the lower-left area.
 - Show 3 texture close-up images.
 - Put a short Korean caption under each.
 - Add 5 to 6 circular color palette chips.
 - Include concise examples for shadow, highlight, gloss, reflection, wear, pattern, and color contrast based on the material.
 
 04. 특징 및 활용 포인트
+- This block sits in the lower-right area.
 - Write 4 Korean bullet points useful for basic design or idea development.
 - Use points such as movement, rhythm, contrast, repetition, direction, structure, texture contrast, elasticity, speed, vitality, or stability, but choose only what fits the material.
 - Add a dynamic sketch at the bottom or right side showing the material being used, moving, cut, opened, bent, splashing, rotating, or interacting naturally according to the material.
 
 [Bottom keyword box]
-- Add about 8 Korean keywords that fit the material.
+- Add a horizontal keyword box at the very bottom.
+- Include about 8 Korean keywords that fit the material.
 - Example style: 구조, 리듬, 반복, 질감, 방향성, 생명력, 신선함, 방사형.
 
 [Important visual rules]
@@ -2832,7 +2848,9 @@ Create a finished poster-like material analysis board based on the uploaded exam
 - Keep the board visually complete as one A4 poster.
 - No English section titles. Korean text only in the final image.
 - Avoid tiny unreadable paragraphs; use short captions, labels, and bullet notes.
-- Avoid random unrelated objects. Everything must support the material analysis.{REF_PART}`;
+- Avoid random unrelated objects. Everything must support the material analysis.
+- The poster must have a clear visible title at top, numbered sections 01/02/03/04, and bottom keyword strip.
+- The final image must feel close to a Korean art portfolio material-analysis page, not a product catalog.{REF_PART}`;
 
 
 // 연출 흐름 디테일
