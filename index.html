@@ -1236,7 +1236,7 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
       <div class="count-row" id="layoutRow" style="flex-wrap:wrap;">
         <div class="count-chip active" data-layout="full" onclick="setLayout('full')">🖼 전체 구성<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">화면 가득 · 근중원경</small></div>
         <div class="count-chip" data-layout="focal" onclick="setLayout('focal')">◎ 주제부 중심<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">개체 표현 · 관계성</small></div>
-<div class="count-chip" data-layout="research" onclick="setLayout('research')">📚 소재 자료<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">각도 + 분석 노트</small></div>
+<div class="count-chip" data-layout="research" onclick="setLayout('research')">📚 소재 자료<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">큰 각도컷 + 설명</small></div>
 <div class="count-chip" data-layout="board" onclick="setLayout('board')">📋 분석 보드<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;pointer-events:none;">A4 세로 포스터</small></div>
       </div>
       
@@ -2094,10 +2094,16 @@ function _lightRefs(arr){
 
 async function localSave(record){
   try {
+    const localRecord = {
+      ...record,
+      refs: _lightRefs(record.refs),
+      compRefs: _lightRefs(record.compRefs),
+      styleRefs: _lightRefs(record.styleRefs)
+    };
     const db = await openDB();
     await new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(record);
+      tx.objectStore(STORE).put(localRecord);
       tx.oncomplete = () => resolve();
       tx.onerror = e => reject(e.target.error);
     });
@@ -2152,7 +2158,12 @@ async function localClearAll(){
 
 async function dbSave(record){
   await localSave(record);
+  dbSaveCloud(record).catch(e => {
+    console.error('클라우드 저장 백그라운드 실패:', e);
+  });
+}
 
+async function dbSaveCloud(record){
   const client = sb();
   if(!client){ console.warn('Supabase 미연결 — 로컬에만 저장됨'); return; }
   try {
@@ -2712,67 +2723,50 @@ const SOYANG_PROMPT = `한국 미대 입시 기초디자인의 '주제부 연출
 - 효과(물줄기·파편·튐)가 주제 소재보다 더 강하게 보이는 구성 금지{REF_PART}`;
 
 // ============ 소재 자료조사 (대표 + 다양한 각도) 프롬프트 ============
-const RESEARCH_PROMPT = `Korean art-school material research sheet.
-Make a square portfolio-style analysis sheet, NOT a plain product-view grid.
-The sheet must combine photo references, sketch diagrams, Korean labels, arrows, palette chips, and short analysis notes.
+const RESEARCH_PROMPT = `Material reference sheet for an art student studying one object.
+Keep the main purpose as large, clear angle references. Add only short Korean explanation text under or beside each view.
 
 [Subject — the ONE object to research]
 {PROMPT}
 
-[Layout — MUST be visibly editorial]
-Use a 1:1 square canvas with an off-white paper background.
-Divide the sheet into clear zones with bold Korean section labels, black brush-tape labels, small stickers/tape accents, hand-drawn arrows, and thin sketch lines.
+[Layout — keep it close to the original angle sheet]
+Use a 1:1 square canvas with a clean white or off-white background.
+The layout should be a large reference grid, not a full analysis poster.
 
-Required zones:
+- ONE large hero image at the top or center, showing the object from its most characteristic 3/4 view.
+- Around it, show 6 to 8 large angle/detail views of the EXACT SAME object.
+- Keep the image cells large. The object should be easy to inspect.
+- Add a short Korean caption under each image, 1 line only.
+- Add one very short Korean explanation line under the caption when useful, 8 to 16 Korean characters if possible.
 
-01 관찰 각도
-- Put 5 to 6 photo-reference views of the SAME object.
-- Do not fill the entire sheet with only product photos.
-- Each view must have a short Korean caption below it:
-  정면 / 측면 / 상단 / 후면 / 3/4뷰 / 디테일 확대
-- Keep the object identity identical in every view.
+Suggested views:
+1. 정면 — 전체 비례 확인
+2. 측면 — 두께와 깊이
+3. 상단 — 윗면 구조
+4. 후면 — 뒷면 구조
+5. 3/4 정면 — 입체감
+6. 3/4 후면 — 후면 볼륨
+7. 질감 확대 — 표면 재질
+8. 구조 확대 — 부품/연결부
 
-02 형태 분석
-- Add one medium-to-large sketch-rendering of the object.
-- Style: pencil sketch line + marker shading + realistic form shadow.
-- Add 4 to 6 Korean callouts with arrows pointing to exact parts.
-- Callouts must analyze the object specifically.
-  Example for a radio: 목재 박스 실루엣, 직사각 중심축, 금속 다이얼, 스피커 망 반복 질감, 안테나 방향성, 모서리 라운딩.
-  For other objects, adapt the terms naturally.
-
-03 구조 도해
-- Add 2 small diagram boxes:
-  1) 외형 구조
-  2) 단면 / 부품 / 연결 구조
-- These should look like simple hand-drawn explanatory diagrams, not extra product photos.
-
-04 질감·색 분석
-- Add 2 to 3 close-up texture crops.
-- Add 5 circular color palette chips sampled from the object.
-- Add short Korean notes about material, surface, light, reflection, wear, pattern, or contrast.
-
-05 활용 키워드
-- Add a bottom keyword strip with 6 to 8 Korean keywords useful for basic design.
-- Choose keywords that fit the object, such as 구조, 리듬, 반복, 질감, 방향성, 대비, 광택, 빈티지, 기계성, 안정감.
-
-[Very important]
-- The final result must visibly contain Korean explanatory text throughout the sheet.
-- The viewer should immediately understand the object's form, texture, structure, and drawing points.
-- Empty product catalog grids are forbidden.
-- If the subject is a radio, make the notes about wood grain, speaker mesh, metal dial, antenna, rectangular body, rounded corners, frequency display, button rhythm, and front/back structure.
+[Small notes — subtle, not poster-like]
+- You may add a tiny bottom strip with 5 to 6 Korean keywords, but keep it small.
+- You may add 1 or 2 small arrows only if they help explain an important part.
+- Do NOT add big numbered sections like 01/02/03/04.
+- Do NOT add large analysis paragraphs, structural diagram boxes, or poster-style blocks. That belongs to the analysis board mode.
 
 [Strict prohibitions]
-- NO plain product-only grid.
-- NO long paragraphs. Only short Korean labels, captions, keywords, and callouts.
+- NO long paragraphs. Only short Korean captions and tiny notes.
 - NO English text in the final image.
 - NO watermarks, random numbers, fake UI, dimensions, or unrelated captions.
 - NO variation in object color, finish, or design between cells.
 - NO complex background, environment, scenery, or props.
-- NO full hand-drawn-only look; photo references should still look realistic, while arrows/diagrams may be hand-drawn.
+- NO full analysis-board layout. Keep large angle photos as the main focus.
+- NO full hand-drawn-only look; reference images should look realistic.
 - NO heavy dramatic lighting or moody shadows.
 
 [Purpose]
-This is a study reference sheet for an art student preparing to draw {PROMPT}. It must teach the object's angles, form, structure, texture, color, and useful drawing keywords at a glance.{REF_PART}`;
+This is a large-view material reference sheet for an art student preparing to draw {PROMPT}. The student should mainly see the object clearly from many angles, with short Korean explanations that help observation.{REF_PART}`;
 
 // ============ A4 세로형 소재 분석 보드 프롬프트 ============
 const BOARD_PROMPT = `A4 portrait Korean art-school material analysis poster.
@@ -4265,7 +4259,7 @@ async function generate(){
       const record = {...meta, image: img, id};
       updateCard(id, img, meta);
       state.results.unshift(record);
-      dbSave(record).catch(e => console.error('저장 실패:', e));
+      await dbSave(record);
       document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
       document.getElementById('clearAllBtn').style.display = 'block';
     } catch(err){
@@ -4837,7 +4831,7 @@ async function _run3D(id, chosenRatio){
     updateCard(newId, img, newMeta);
     const record = {...newMeta, image: img, id: newId};
     state.results.unshift(record);
-    dbSave(record).catch(e => console.error('저장 실패:', e));
+    await dbSave(record);
     document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
     document.getElementById('clearAllBtn').style.display = 'block';
   } catch(err){
@@ -5039,7 +5033,7 @@ async function _runDynamic(id){
     updateCard(newId, img, newMeta);
     const record = {...newMeta, image: img, id: newId};
     state.results.unshift(record);
-    dbSave(record).catch(e => console.error('저장 실패:', e));
+    await dbSave(record);
     document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
     document.getElementById('clearAllBtn').style.display = 'block';
   } catch(err){
@@ -5157,7 +5151,7 @@ async function doRedirect(id, key){
     updateCard(newId, img, newMeta);
     const record = {...newMeta, image: img, id: newId};
     state.results.unshift(record);
-    dbSave(record).catch(e => console.error('저장 실패:', e));
+    await dbSave(record);
     document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
     document.getElementById('clearAllBtn').style.display = 'block';
     toast(`🔧 ${opt.label} 완료`);
@@ -5333,7 +5327,7 @@ async function regenerate(id){
     const idx = state.results.findIndex(r => r.id === id);
     if(idx >= 0) state.results[idx] = record;
     
-    dbSave(record).catch(e => console.error('저장 실패:', e));
+    await dbSave(record);
     toast('재생성 완료');
   } catch(err){
     showError(id, err.message);
