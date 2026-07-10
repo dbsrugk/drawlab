@@ -2883,25 +2883,28 @@ The final image should look like a premium product-view puzzle board with large 
 {PROMPT}
 
 [Layout — match this structure]
-Use a 5:4 landscape canvas, not a square canvas, with a clean white or off-white background.
-Redesign the whole sheet for the 5:4 frame. Do not squeeze a square grid into the frame.
-Compose the meaningful sheet inside a centered 5:4 safe frame. If the generator canvas is wider than 5:4, keep the extra far-left and far-right outer area as plain background only; no object, caption, panel line, or important detail may sit there.
+Use the selected final aspect frame, with a clean white or off-white background.
+Redesign the whole sheet for the selected frame. Do not squeeze a square grid into the frame.
+Compose the meaningful sheet inside the centered safe frame. If the generator canvas is larger than the selected final frame, keep the extra outer area as plain background only; no object, caption, panel line, or important detail may sit there.
 Make the layout almost exactly like an asymmetric puzzle-tile board:
 - Use 7 to 8 tiles total, with mixed tile sizes. The tile grid must NOT be equal columns or equal rows.
-- One huge vertical hero tile occupies about 42% to 48% of the canvas width and 82% to 92% of the canvas height. Place it on the left or slightly off-center. It shows the complete object as the dominant reference.
+- One large hero tile occupies about 35% to 44% of the safe frame area. It may be vertical, square, or slightly horizontal depending on the object shape. It shows the COMPLETE object as the dominant reference.
 - Add one wide horizontal tile near the top-right or bottom-right, showing a long side/detail view. This tile should be clearly wider than it is tall.
 - Add two medium square tiles showing front view and 3/4 view.
-- Add two small vertical tiles showing side view and rear view.
+- Add two medium-small tiles showing side view and rear view. Do not make these tiles so narrow that the object gets cut.
 - Add one small square or horizontal close-up tile showing texture, joint, handle, button, surface, grain, cut edge, or structure.
 - Tiles should interlock like puzzle pieces: some tall, some square, some horizontal, with varied widths and heights but clean alignment.
 - Use thin light-gray borders and consistent gutters. The gutters should feel intentional, like a modular editorial board.
-- Avoid one giant empty area. Fill the 5:4 safe frame with balanced tile mass from left to right and top to bottom.
+- Avoid one giant empty area. Fill the safe frame with balanced tile mass from left to right and top to bottom.
 - The composition should feel more dynamic than a catalog grid, but still clean and useful for drawing reference.
 
 [Image direction]
 - Every view must show the SAME object, same color, same material, same design.
-- Keep the object large in each cell.
-- Crop only secondary tiles when it helps the puzzle layout; never crop the main hero tile's essential silhouette.
+- In every non-detail tile, show the object's complete outer silhouette: top, bottom, left, right, handle, legs, drawer, base, and any protruding part must remain visible.
+- Fit each object inside its tile like product photography using object-contain, not object-cover.
+- Keep 10% to 16% inner padding between the object and tile borders.
+- Keep the object medium-large, but never so large that it touches or crosses the tile border.
+- Only the one tile labeled 디테일 확대 may crop into the object. All other tiles must show the full object or a complete meaningful part without cutting important edges.
 - Use clean product-reference lighting and a neutral background.
 - Show flat views and natural 3D views only.
 - The detail crop should show a useful texture, joint, surface, button, fabric, grain, cut edge, or structure depending on the object.
@@ -4603,8 +4606,8 @@ function withAspectComposition(promptText, ratio){
   if(ratio !== 'landscape' && ratio !== 'portrait') return promptText;
   const label = ratio === 'landscape' ? '5:4 가로형' : '4:5 세로형';
   const safeArea = ratio === 'landscape'
-    ? '좌우 가장자리 10~12%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 76~80% 안에서 완결한다.'
-    : '상하 가장자리 10~12%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 76~80% 안에서 완결한다.';
+    ? '좌우 가장자리 16~18%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 64~68% 안에서 완결한다.'
+    : '상하 가장자리 16~18%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 64~68% 안에서 완결한다.';
   return `${promptText}
 
 [최종 프레임 재구성 지시]
@@ -4614,6 +4617,7 @@ function withAspectComposition(promptText, ratio){
 - ${safeArea}
 - 배경과 명암 흐름은 프레임 끝까지 자연스럽게 이어져야 하며, 흰 여백이나 빈 띠가 생기면 안 된다.
 - 중요한 소재의 전체형, 주요 디테일, 제목/분석 영역은 최종 프레임 밖으로 잘리지 않게 안전 영역 안에 둔다.
+- 제품컷, 캡션, 패널선은 최종 ${label} 프레임 안에서 최소 8% 안쪽 여백을 두고 배치한다.
 - 가장자리에는 잘려도 의미가 손상되지 않는 배경 질감, 그림자, 흐름 효과, 보조 반복 요소만 배치한다.`;
 }
 
