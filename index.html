@@ -300,7 +300,9 @@ input,textarea,select{font-family:inherit;}
 .result-card{background:#fff;border:1px solid var(--line);position:relative;animation:fadeUp .4s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-.result-img-wrap{position:relative;background:var(--paper-2);aspect-ratio:1.38/1;overflow:hidden;}
+.result-img-wrap{position:relative;background:var(--paper-2);aspect-ratio:5/4;overflow:hidden;}
+.result-card.is-portrait .result-img-wrap{aspect-ratio:4/5;}
+.result-card.is-square .result-img-wrap{aspect-ratio:1/1;}
 .result-card.is-research .result-img-wrap{aspect-ratio:1/1;}
 .result-card.is-board .result-img-wrap{aspect-ratio:1/1.414;}
 .result-img-wrap img{width:100%;height:100%;object-fit:contain;transition:transform .3s ease;}
@@ -1309,8 +1311,8 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
         <div style="font-size:11px;color:var(--ink-3);margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">비율 <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;opacity:.6;margin-left:4px;">RATIO</span></div>
         <div class="count-row" id="ratioRow" style="display:flex;gap:6px;">
-          <div class="count-chip active" data-ratio="landscape" style="flex:1;text-align:center;">▭ 가로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">4:3</small></div>
-          <div class="count-chip" data-ratio="portrait" style="flex:1;text-align:center;">▯ 세로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">3:4</small></div>
+          <div class="count-chip active" data-ratio="landscape" style="flex:1;text-align:center;">▭ 가로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">5:4</small></div>
+          <div class="count-chip" data-ratio="portrait" style="flex:1;text-align:center;">▯ 세로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">4:5</small></div>
           <div class="count-chip" data-ratio="square" style="flex:1;text-align:center;">□ 정사각<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">1:1</small></div>
         </div>
       </div>
@@ -2446,7 +2448,7 @@ async function migrateLocalToCloud(){
 window.migrateLocalToCloud = migrateLocalToCloud;
 
 // ============ 기초디자인 프롬프트 (입시 완성작 스타일 — 통제 강화판) ============
-const GIDI_PROMPT = `입시 기초디자인 완성작 스타일. 4:3 가로 비율.
+const GIDI_PROMPT = `입시 기초디자인 완성작 스타일. 5:4 가로 비율.
 
 {EXAM_INFO}[메인 소재 — 화면의 40% 이상, 전체 형태 명확히 보일 것]
 {PROMPT}
@@ -2859,7 +2861,7 @@ const SOYANG_PROMPT = `한국 미대 입시 기초디자인의 '주제부 연출
 - 마카, 수채, 과슈, 색연필이 섞인 손그림 입시 실기 표현으로 보이게 한다.
 
 [규격]
-- 4:3 비율 (가로형)
+- 5:4 비율 (가로형)
 - 손그림 + 마카·포스터칼라·색연필 혼합매체 채색
 - 화지 종이 질감
 - 디지털 합성·3D 렌더링 톤 배제, 입시 실기실 손그림 시범작 스타일
@@ -4471,7 +4473,7 @@ async function callOpenAI(promptText, refs){
   const quality = state.quality || 'medium';
   let res;
   
-  // research(자료조사)는 정사각형, 그 외는 가로 1536x1024
+  // OpenAI 이미지 API는 지정 가능한 크기가 제한되어 있어 먼저 가까운 크기로 생성한 뒤 5:4/4:5로 중앙 크롭한다.
   // 비율 칩 선택값에 따라 사이즈 결정
   const sizeMap = {landscape:'1536x1024', portrait:'1024x1536', square:'1024x1024'};
   const size = sizeMap[state.aspectRatio] || (state.tab === 'research' ? '1024x1024' : '1536x1024');
@@ -4558,16 +4560,46 @@ async function callOpenAI(promptText, refs){
   const b64 = data.data?.[0]?.b64_json;
   if(!b64) throw new Error('이미지 응답을 받지 못했습니다. 제시어를 조정해보세요.');
   
-  return {
+  return await normalizeImageAspect({
     mimeType: 'image/png',
     dataUrl: `data:image/png;base64,${b64}`
-  };
+  }, state.aspectRatio);
+}
+
+function normalizeImageAspect(img, ratio){
+  const targetRatio = ratio === 'landscape' ? 5 / 4 : ratio === 'portrait' ? 4 / 5 : 1;
+  if(!img?.dataUrl || !targetRatio) return Promise.resolve(img);
+  return new Promise(resolve => {
+    const image = new Image();
+    image.onload = () => {
+      const sourceRatio = image.naturalWidth / image.naturalHeight;
+      let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
+      if(Math.abs(sourceRatio - targetRatio) < 0.01) return resolve(img);
+      if(sourceRatio > targetRatio){
+        sw = Math.round(sh * targetRatio);
+        sx = Math.round((image.naturalWidth - sw) / 2);
+      } else {
+        sh = Math.round(sw / targetRatio);
+        sy = Math.round((image.naturalHeight - sh) / 2);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = sw;
+      canvas.height = sh;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, sw, sh);
+      resolve({mimeType: 'image/png', dataUrl: canvas.toDataURL('image/png')});
+    };
+    image.onerror = () => resolve(img);
+    image.src = img.dataUrl;
+  });
 }
 
 // ============ 카드 ============
 function addPlaceholderCard(id, meta, num){
   const card = document.createElement('div');
-  card.className = 'result-card' + (meta.tab === 'research' ? ' is-research' : meta.tab === 'board' ? ' is-board' : '');
+  card.className = 'result-card'
+    + (meta.aspectRatio === 'portrait' ? ' is-portrait' : meta.aspectRatio === 'square' ? ' is-square' : '')
+    + (meta.tab === 'research' ? ' is-research' : meta.tab === 'board' ? ' is-board' : '');
   card.id = id;
   card.innerHTML = `
     <div class="result-img-wrap">
@@ -4671,7 +4703,9 @@ function bindCardActions(card, id){
 // 저장된 카드 (히스토리에서 로드된 것)
 function addCompletedCard(rec, num){
   const card = document.createElement('div');
-  card.className = 'result-card' + (rec.tab === 'research' ? ' is-research' : rec.tab === 'board' ? ' is-board' : '');
+  card.className = 'result-card'
+    + (rec.aspectRatio === 'portrait' ? ' is-portrait' : rec.aspectRatio === 'square' ? ' is-square' : '')
+    + (rec.tab === 'research' ? ' is-research' : rec.tab === 'board' ? ' is-board' : '');
   card.id = rec.id;
   card._meta = rec;
   card._img = rec.image;
@@ -4936,7 +4970,7 @@ const RENDER_3D_PROMPT = `[★ 가장 중요한 절대 규칙 ★]
 - 원본이 이 규칙을 따랐다면 그대로 유지
 
 [규격]
-- 4:3 가로 비율 (1536x1024)
+- 5:4 가로 비율
 - 글자·로고·워터마크·숫자·라벨 일체 금지
 - 판타지·게임 콘셉트 아트·일러스트 톤 금지
 - 정밀한 제품 비주얼 톤
@@ -4952,8 +4986,8 @@ function show3DRatioModal(id){
   const baseMeta = card._meta;
   const baseRatio = baseMeta.aspectRatio || 'landscape';
   const ratioLabel = {
-    landscape: '가로 (1536×1024)',
-    portrait:  '세로 (1024×1536)',
+    landscape: '가로 (5:4)',
+    portrait:  '세로 (4:5)',
     square:    '정사각 (1024×1024)'
   };
   
@@ -4982,8 +5016,8 @@ function show3DRatioModal(id){
       </div>
       
       ${opt(baseRatio, ratioLabel[baseRatio], '원본과 동일', true)}
-      ${baseRatio !== 'landscape' ? opt('landscape', '가로', '1536 × 1024  (4:3)', false) : ''}
-      ${baseRatio !== 'portrait' ? opt('portrait', '세로', '1024 × 1536  (3:4)', false) : ''}
+      ${baseRatio !== 'landscape' ? opt('landscape', '가로', '5:4', false) : ''}
+      ${baseRatio !== 'portrait' ? opt('portrait', '세로', '4:5', false) : ''}
       ${baseRatio !== 'square' ? opt('square', '정사각', '1024 × 1024  (1:1)', false) : ''}
       
       <div style="margin-top:16px;text-align:right;">
