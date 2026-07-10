@@ -300,8 +300,8 @@ input,textarea,select{font-family:inherit;}
 .result-card{background:#fff;border:1px solid var(--line);position:relative;animation:fadeUp .4s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
-.result-img-wrap{position:relative;background:var(--paper-2);aspect-ratio:5/4;overflow:hidden;}
-.result-card.is-portrait .result-img-wrap{aspect-ratio:4/5;}
+.result-img-wrap{position:relative;background:var(--paper-2);aspect-ratio:4/3;overflow:hidden;}
+.result-card.is-portrait .result-img-wrap{aspect-ratio:3/4;}
 .result-card.is-square .result-img-wrap{aspect-ratio:1/1;}
 .result-card.is-board .result-img-wrap{aspect-ratio:1/1.414;}
 .result-img-wrap img{width:100%;height:100%;object-fit:contain;transition:transform .3s ease;}
@@ -1310,8 +1310,8 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
       <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);">
         <div style="font-size:11px;color:var(--ink-3);margin-bottom:8px;font-weight:700;letter-spacing:0.5px;">비율 <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;opacity:.6;margin-left:4px;">RATIO</span></div>
         <div class="count-row" id="ratioRow" style="display:flex;gap:6px;">
-          <div class="count-chip active" data-ratio="landscape" style="flex:1;text-align:center;">▭ 가로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">5:4</small></div>
-          <div class="count-chip" data-ratio="portrait" style="flex:1;text-align:center;">▯ 세로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">4:5</small></div>
+          <div class="count-chip active" data-ratio="landscape" style="flex:1;text-align:center;">▭ 가로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">4:3</small></div>
+          <div class="count-chip" data-ratio="portrait" style="flex:1;text-align:center;">▯ 세로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">3:4</small></div>
         </div>
       </div>
     </div>
@@ -2446,7 +2446,7 @@ async function migrateLocalToCloud(){
 window.migrateLocalToCloud = migrateLocalToCloud;
 
 // ============ 기초디자인 프롬프트 (입시 완성작 스타일 — 통제 강화판) ============
-const GIDI_PROMPT = `입시 기초디자인 완성작 스타일. 5:4 가로 비율.
+const GIDI_PROMPT = `입시 기초디자인 완성작 스타일. 4:3 가로 비율.
 
 {EXAM_INFO}[메인 소재 — 화면의 40% 이상, 전체 형태 명확히 보일 것]
 {PROMPT}
@@ -2859,7 +2859,7 @@ const SOYANG_PROMPT = `한국 미대 입시 기초디자인의 '주제부 연출
 - 마카, 수채, 과슈, 색연필이 섞인 손그림 입시 실기 표현으로 보이게 한다.
 
 [규격]
-- 5:4 비율 (가로형)
+- 4:3 비율 (가로형)
 - 손그림 + 마카·포스터칼라·색연필 혼합매체 채색
 - 화지 종이 질감
 - 디지털 합성·3D 렌더링 톤 배제, 입시 실기실 손그림 시범작 스타일
@@ -3833,7 +3833,7 @@ function setLayout(layout){
     '예: 타자기, 안경, 펜, 잉크';
   if(typeof renderTips === 'function') renderTips();
   
-  // 모드 전환 시 기본 비율 자동 (소재 자료도 5:4 가로형으로 재구성)
+  // 모드 전환 시 기본 비율 자동 (기본은 4:3 가로형)
   const defaultRatio = state.tab === 'board' ? 'portrait' : 'landscape';
   state.aspectRatio = defaultRatio;
   document.querySelectorAll('#ratioRow .count-chip').forEach(c => {
@@ -4470,7 +4470,7 @@ async function callOpenAI(promptText, refs){
   const quality = state.quality || 'medium';
   let res;
   
-  // OpenAI 이미지 API는 지정 가능한 크기가 제한되어 있어 가까운 크기로 생성하되, 프롬프트에서 5:4/4:5 판형으로 재구성하게 한다.
+  // OpenAI 이미지 API의 기본 가로/세로 크기(4:3, 3:4)를 사용한다.
   // 비율 칩 선택값에 따라 사이즈 결정
   const sizeMap = {landscape:'1536x1024', portrait:'1024x1536', square:'1024x1024'};
   const size = sizeMap[state.aspectRatio] || '1536x1024';
@@ -4562,44 +4562,11 @@ async function callOpenAI(promptText, refs){
     mimeType: 'image/png',
     dataUrl: `data:image/png;base64,${b64}`
   };
-  return state.tab === 'research'
-    ? await padImageToAspect(imageResult, state.aspectRatio)
-    : await normalizeImageAspect(imageResult, state.aspectRatio);
-}
-
-function padImageToAspect(img, ratio){
-  const targetRatio = ratio === 'landscape' ? 5 / 4 : ratio === 'portrait' ? 4 / 5 : 1;
-  if(!img?.dataUrl || !targetRatio) return Promise.resolve(img);
-  return new Promise(resolve => {
-    const image = new Image();
-    image.onload = () => {
-      const sourceRatio = image.naturalWidth / image.naturalHeight;
-      if(Math.abs(sourceRatio - targetRatio) < 0.01) return resolve(img);
-      let canvasW = image.naturalWidth;
-      let canvasH = image.naturalHeight;
-      if(sourceRatio < targetRatio){
-        canvasW = Math.round(image.naturalHeight * targetRatio);
-      } else {
-        canvasH = Math.round(image.naturalWidth / targetRatio);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = canvasW;
-      canvas.height = canvasH;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvasW, canvasH);
-      const dx = Math.round((canvasW - image.naturalWidth) / 2);
-      const dy = Math.round((canvasH - image.naturalHeight) / 2);
-      ctx.drawImage(image, dx, dy);
-      resolve({mimeType: 'image/png', dataUrl: canvas.toDataURL('image/png')});
-    };
-    image.onerror = () => resolve(img);
-    image.src = img.dataUrl;
-  });
+  return imageResult;
 }
 
 function normalizeImageAspect(img, ratio){
-  const targetRatio = ratio === 'landscape' ? 5 / 4 : ratio === 'portrait' ? 4 / 5 : 1;
+  const targetRatio = ratio === 'landscape' ? 4 / 3 : ratio === 'portrait' ? 3 / 4 : 1;
   if(!img?.dataUrl || !targetRatio) return Promise.resolve(img);
   return new Promise(resolve => {
     const image = new Image();
@@ -4630,11 +4597,11 @@ function normalizeImageAspect(img, ratio){
 
 function withAspectComposition(promptText, ratio, mode){
   if(ratio !== 'landscape' && ratio !== 'portrait') return promptText;
-  const label = ratio === 'landscape' ? '5:4 가로형' : '4:5 세로형';
+  const label = ratio === 'landscape' ? '4:3 가로형' : '3:4 세로형';
   if(mode === 'research'){
     const frameRule = ratio === 'portrait'
-      ? `FINAL FORMAT FIRST: create a 4:5 PORTRAIT material reference puzzle sheet. The design must read as a 4:5 vertical board, not 2:3, not A4, not square. Use a tall 4:5 safe frame with generous white margins inside every tile.`
-      : `FINAL FORMAT FIRST: create a 5:4 LANDSCAPE material reference puzzle sheet. The design must read as a 5:4 wide board, not 3:2, not square. Use a wide 5:4 safe frame with generous white margins inside every tile.`;
+      ? `FINAL FORMAT FIRST: create a 3:4 PORTRAIT material reference puzzle sheet. The design must read as a 3:4 vertical board, not A4, not square. Use a tall 3:4 safe frame with generous white margins inside every tile.`
+      : `FINAL FORMAT FIRST: create a 4:3 LANDSCAPE material reference puzzle sheet. The design must read as a 4:3 wide board, not square. Use a wide 4:3 safe frame with generous white margins inside every tile.`;
     return `${frameRule}
 
 RESEARCH SHEET NON-CROPPING RULES:
@@ -5040,7 +5007,7 @@ const RENDER_3D_PROMPT = `[★ 가장 중요한 절대 규칙 ★]
 - 원본이 이 규칙을 따랐다면 그대로 유지
 
 [규격]
-- 5:4 가로 비율
+- 4:3 가로 비율
 - 글자·로고·워터마크·숫자·라벨 일체 금지
 - 판타지·게임 콘셉트 아트·일러스트 톤 금지
 - 정밀한 제품 비주얼 톤
@@ -5056,8 +5023,8 @@ function show3DRatioModal(id){
   const baseMeta = card._meta;
   const baseRatio = baseMeta.aspectRatio || 'landscape';
   const ratioLabel = {
-    landscape: '가로 (5:4)',
-    portrait:  '세로 (4:5)',
+    landscape: '가로 (4:3)',
+    portrait:  '세로 (3:4)',
     square:    '정사각 (1024×1024)'
   };
   
@@ -5086,8 +5053,8 @@ function show3DRatioModal(id){
       </div>
       
       ${opt(baseRatio, ratioLabel[baseRatio], '원본과 동일', true)}
-      ${baseRatio !== 'landscape' ? opt('landscape', '가로', '5:4', false) : ''}
-      ${baseRatio !== 'portrait' ? opt('portrait', '세로', '4:5', false) : ''}
+      ${baseRatio !== 'landscape' ? opt('landscape', '가로', '1536 × 1024  (4:3)', false) : ''}
+      ${baseRatio !== 'portrait' ? opt('portrait', '세로', '1024 × 1536  (3:4)', false) : ''}
       ${baseRatio !== 'square' ? opt('square', '정사각', '1024 × 1024  (1:1)', false) : ''}
       
       <div style="margin-top:16px;text-align:right;">
