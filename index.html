@@ -303,7 +303,6 @@ input,textarea,select{font-family:inherit;}
 .result-img-wrap{position:relative;background:var(--paper-2);aspect-ratio:5/4;overflow:hidden;}
 .result-card.is-portrait .result-img-wrap{aspect-ratio:4/5;}
 .result-card.is-square .result-img-wrap{aspect-ratio:1/1;}
-.result-card.is-research .result-img-wrap{aspect-ratio:1/1;}
 .result-card.is-board .result-img-wrap{aspect-ratio:1/1.414;}
 .result-img-wrap img{width:100%;height:100%;object-fit:contain;transition:transform .3s ease;}
 .result-img-wrap[data-act="zoom"]:hover img{transform:scale(1.03);}
@@ -1313,7 +1312,6 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
         <div class="count-row" id="ratioRow" style="display:flex;gap:6px;">
           <div class="count-chip active" data-ratio="landscape" style="flex:1;text-align:center;">▭ 가로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">5:4</small></div>
           <div class="count-chip" data-ratio="portrait" style="flex:1;text-align:center;">▯ 세로<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">4:5</small></div>
-          <div class="count-chip" data-ratio="square" style="flex:1;text-align:center;">□ 정사각<small style="display:block;font-size:9px;font-weight:500;opacity:.65;margin-top:1px;">1:1</small></div>
         </div>
       </div>
     </div>
@@ -2885,19 +2883,21 @@ The final image should look like a premium product-view grid with large clear im
 {PROMPT}
 
 [Layout — match this structure]
-Use a 1:1 square canvas with a clean white or off-white background.
+Use a 5:4 landscape canvas, not a square canvas, with a clean white or off-white background.
+Redesign the whole sheet for the 5:4 frame. Do not squeeze a square grid into the frame.
+Compose the meaningful sheet inside a centered 5:4 safe frame. If the generator canvas is wider than 5:4, keep the extra far-left and far-right outer area as plain background only; no object, caption, panel line, or important detail may sit there.
 Make the layout almost exactly like this:
-- Top half: ONE very large hero image of the object, cleanly rendered, with enough white margin.
-- Middle row: THREE large cells:
-  1. 정면
-  2. 측면
-  3. 3/4 정면
-- Lower row: TWO large cells:
-  4. 상단
-  5. 3/4 후면
-- Bottom row: TWO large cells:
-  6. 후면
-  7. 디테일 확대
+- Left 55% to 60% of the canvas: ONE very large hero image of the object, cleanly rendered, centered vertically, showing the complete silhouette and key details.
+- Right 40% to 45% of the canvas: a tidy reference panel divided into SIX clear cells, arranged as 2 columns x 3 rows.
+- Right panel cell roles:
+  1. 정면 — 전체 비례
+  2. 측면 — 두께와 깊이
+  3. 3/4 정면 — 입체감
+  4. 상단 — 윗면 구조
+  5. 후면 — 뒷면 구조
+  6. 디테일 확대 — 질감과 부품
+- Keep all panel lines thin and subtle. Leave enough inner padding so captions never touch borders.
+- The sheet should feel like a wide product reference layout: large main object on the left, organized angle references on the right.
 
 [Image direction]
 - Every view must show the SAME object, same color, same material, same design.
@@ -2913,7 +2913,6 @@ Make the layout almost exactly like this:
   측면 — 두께와 깊이
   3/4 정면 — 입체감
   상단 — 윗면 구조
-  3/4 후면 — 후면 볼륨
   후면 — 뒷면 구조
   디테일 확대 — 질감과 부품
 - Adapt captions naturally to the object, but keep them short.
@@ -3713,9 +3712,10 @@ async function restoreSession(){
       });
     }
     if(s.aspectRatio){
-      state.aspectRatio = s.aspectRatio;
+      const restoredRatio = s.aspectRatio === 'square' ? 'landscape' : s.aspectRatio;
+      state.aspectRatio = restoredRatio;
       document.querySelectorAll('#ratioRow .count-chip').forEach(c => {
-        c.classList.toggle('active', c.dataset.ratio === s.aspectRatio);
+        c.classList.toggle('active', c.dataset.ratio === restoredRatio);
       });
     }
     
@@ -3836,8 +3836,8 @@ function setLayout(layout){
     '예: 타자기, 안경, 펜, 잉크';
   if(typeof renderTips === 'function') renderTips();
   
-  // 모드 전환 시 기본 비율 자동 (이전에 사용자가 명시 변경했어도 모드 바뀌면 재설정)
-  const defaultRatio = state.tab === 'research' ? 'square' : state.tab === 'board' ? 'portrait' : 'landscape';
+  // 모드 전환 시 기본 비율 자동 (소재 자료도 5:4 가로형으로 재구성)
+  const defaultRatio = state.tab === 'board' ? 'portrait' : 'landscape';
   state.aspectRatio = defaultRatio;
   document.querySelectorAll('#ratioRow .count-chip').forEach(c => {
     c.classList.toggle('active', c.dataset.ratio === defaultRatio);
@@ -4473,16 +4473,17 @@ async function callOpenAI(promptText, refs){
   const quality = state.quality || 'medium';
   let res;
   
-  // OpenAI 이미지 API는 지정 가능한 크기가 제한되어 있어 먼저 가까운 크기로 생성한 뒤 5:4/4:5로 중앙 크롭한다.
+  // OpenAI 이미지 API는 지정 가능한 크기가 제한되어 있어 가까운 크기로 생성하되, 프롬프트에서 5:4/4:5 판형으로 재구성하게 한다.
   // 비율 칩 선택값에 따라 사이즈 결정
   const sizeMap = {landscape:'1536x1024', portrait:'1024x1536', square:'1024x1024'};
-  const size = sizeMap[state.aspectRatio] || (state.tab === 'research' ? '1024x1024' : '1536x1024');
+  const size = sizeMap[state.aspectRatio] || '1536x1024';
+  const framedPrompt = withAspectComposition(promptText, state.aspectRatio);
   
   if(isEdit){
     // 참고 이미지 있음 → /v1/images/edits (multipart/form-data)
     const formData = new FormData();
     formData.append('model', 'gpt-image-2');
-    formData.append('prompt', promptText);
+    formData.append('prompt', framedPrompt);
     formData.append('size', size);
     formData.append('quality', quality);
     formData.append('n', '1');
@@ -4529,7 +4530,7 @@ async function callOpenAI(promptText, refs){
       },
       body: JSON.stringify({
         model: 'gpt-image-2',
-        prompt: promptText,
+        prompt: framedPrompt,
         size: size,
         quality: quality,
         n: 1
@@ -4575,28 +4576,43 @@ function normalizeImageAspect(img, ratio){
       const sourceRatio = image.naturalWidth / image.naturalHeight;
       if(Math.abs(sourceRatio - targetRatio) < 0.01) return resolve(img);
 
-      let canvasW = image.naturalWidth;
-      let canvasH = image.naturalHeight;
+      let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
       if(sourceRatio > targetRatio){
-        canvasH = Math.round(canvasW / targetRatio);
+        sw = Math.round(sh * targetRatio);
+        sx = Math.round((image.naturalWidth - sw) / 2);
       } else {
-        canvasW = Math.round(canvasH * targetRatio);
+        sh = Math.round(sw / targetRatio);
+        sy = Math.round((image.naturalHeight - sh) / 2);
       }
 
       const canvas = document.createElement('canvas');
-      canvas.width = canvasW;
-      canvas.height = canvasH;
+      canvas.width = sw;
+      canvas.height = sh;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvasW, canvasH);
-      const dx = Math.round((canvasW - image.naturalWidth) / 2);
-      const dy = Math.round((canvasH - image.naturalHeight) / 2);
-      ctx.drawImage(image, dx, dy);
+      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, sw, sh);
       resolve({mimeType: 'image/png', dataUrl: canvas.toDataURL('image/png')});
     };
     image.onerror = () => resolve(img);
     image.src = img.dataUrl;
   });
+}
+
+function withAspectComposition(promptText, ratio){
+  if(ratio !== 'landscape' && ratio !== 'portrait') return promptText;
+  const label = ratio === 'landscape' ? '5:4 가로형' : '4:5 세로형';
+  const safeArea = ratio === 'landscape'
+    ? '좌우 가장자리 10~12%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 76~80% 안에서 완결한다.'
+    : '상하 가장자리 10~12%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 76~80% 안에서 완결한다.';
+  return `${promptText}
+
+[최종 프레임 재구성 지시]
+- 최종 결과는 ${label} 비율의 완성 이미지로 보이도록 구도 자체를 다시 설계한다.
+- 기존 구도를 단순히 늘리거나 여백으로 메우지 말고, ${label} 프레임에 맞춰 소재 크기, 위치, 원근, 반복 리듬을 재배치한다.
+- 생성 캔버스가 ${label}보다 넓거나 높더라도, 의미 있는 디자인은 중앙의 ${label} 안전 프레임 안에서 완성한다.
+- ${safeArea}
+- 배경과 명암 흐름은 프레임 끝까지 자연스럽게 이어져야 하며, 흰 여백이나 빈 띠가 생기면 안 된다.
+- 중요한 소재의 전체형, 주요 디테일, 제목/분석 영역은 최종 프레임 밖으로 잘리지 않게 안전 영역 안에 둔다.
+- 가장자리에는 잘려도 의미가 손상되지 않는 배경 질감, 그림자, 흐름 효과, 보조 반복 요소만 배치한다.`;
 }
 
 // ============ 카드 ============
