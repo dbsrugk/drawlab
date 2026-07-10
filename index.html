@@ -4573,8 +4573,39 @@ async function callOpenAI(promptText, refs){
     dataUrl: `data:image/png;base64,${b64}`
   };
   return state.tab === 'research'
-    ? imageResult
+    ? await padImageToAspect(imageResult, state.aspectRatio)
     : await normalizeImageAspect(imageResult, state.aspectRatio);
+}
+
+function padImageToAspect(img, ratio){
+  const targetRatio = ratio === 'landscape' ? 5 / 4 : ratio === 'portrait' ? 4 / 5 : 1;
+  if(!img?.dataUrl || !targetRatio) return Promise.resolve(img);
+  return new Promise(resolve => {
+    const image = new Image();
+    image.onload = () => {
+      const sourceRatio = image.naturalWidth / image.naturalHeight;
+      if(Math.abs(sourceRatio - targetRatio) < 0.01) return resolve(img);
+      let canvasW = image.naturalWidth;
+      let canvasH = image.naturalHeight;
+      if(sourceRatio < targetRatio){
+        canvasW = Math.round(image.naturalHeight * targetRatio);
+      } else {
+        canvasH = Math.round(image.naturalWidth / targetRatio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+      const dx = Math.round((canvasW - image.naturalWidth) / 2);
+      const dy = Math.round((canvasH - image.naturalHeight) / 2);
+      ctx.drawImage(image, dx, dy);
+      resolve({mimeType: 'image/png', dataUrl: canvas.toDataURL('image/png')});
+    };
+    image.onerror = () => resolve(img);
+    image.src = img.dataUrl;
+  });
 }
 
 function normalizeImageAspect(img, ratio){
