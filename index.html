@@ -2883,7 +2883,7 @@ The final image should look like a premium product-view puzzle board with large 
 {PROMPT}
 
 [Layout — match this structure]
-Use the selected final aspect frame, with a clean white or off-white background.
+Use the selected final aspect frame, with a pure white #FFFFFF background only.
 Redesign the whole sheet for the selected frame. Do not squeeze a square grid into the frame.
 Compose the meaningful sheet inside the centered safe frame. If the generator canvas is larger than the selected final frame, keep the extra outer area as plain background only; no object, caption, panel line, or important detail may sit there.
 Make the layout almost exactly like an asymmetric puzzle-tile board:
@@ -2905,7 +2905,8 @@ Make the layout almost exactly like an asymmetric puzzle-tile board:
 - Keep 10% to 16% inner padding between the object and tile borders.
 - Keep the object medium-large, but never so large that it touches or crosses the tile border.
 - Only the one tile labeled 디테일 확대 may crop into the object. All other tiles must show the full object or a complete meaningful part without cutting important edges.
-- Use clean product-reference lighting and a neutral background.
+- Use clean product-reference lighting on a pure white #FFFFFF background.
+- The background inside every tile and around the full board must be pure white. No cream, beige, ivory, gray paper, warm off-white, vignette, texture wash, or colored background.
 - Show flat views and natural 3D views only.
 - The detail crop should show a useful texture, joint, surface, button, fabric, grain, cut edge, or structure depending on the object.
 
@@ -2931,7 +2932,7 @@ Make the layout almost exactly like an asymmetric puzzle-tile board:
 - NO English text in the final image.
 - NO watermarks, random numbers, fake UI, dimensions, or unrelated captions.
 - NO variation in object color, finish, or design between cells.
-- NO complex background, environment, scenery, or props.
+- NO complex background, environment, scenery, props, cream paper, beige tint, gray backdrop, vignette, or warm off-white background.
 - NO heavy dramatic lighting or moody shadows.
 
 [Purpose]
@@ -4566,10 +4567,13 @@ async function callOpenAI(promptText, refs){
   const b64 = data.data?.[0]?.b64_json;
   if(!b64) throw new Error('이미지 응답을 받지 못했습니다. 제시어를 조정해보세요.');
   
-  return await normalizeImageAspect({
+  const imageResult = {
     mimeType: 'image/png',
     dataUrl: `data:image/png;base64,${b64}`
-  }, state.aspectRatio);
+  };
+  return state.tab === 'research'
+    ? imageResult
+    : await normalizeImageAspect(imageResult, state.aspectRatio);
 }
 
 function normalizeImageAspect(img, ratio){
