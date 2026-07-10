@@ -2877,7 +2877,7 @@ const SOYANG_PROMPT = `한국 미대 입시 기초디자인의 '주제부 연출
 
 // ============ 소재 자료조사 (대표 + 다양한 각도) 프롬프트 ============
 const RESEARCH_PROMPT = `Clean material angle reference sheet for an art student studying one object.
-The final image should look like a premium product-view grid with large clear images, like a catalog reference sheet, plus small Korean captions.
+The final image should look like a premium product-view puzzle board with large and small tiles mixed together, like an editorial product reference collage, plus small Korean captions.
 
 [Subject — the ONE object to research]
 {PROMPT}
@@ -2886,28 +2886,29 @@ The final image should look like a premium product-view grid with large clear im
 Use a 5:4 landscape canvas, not a square canvas, with a clean white or off-white background.
 Redesign the whole sheet for the 5:4 frame. Do not squeeze a square grid into the frame.
 Compose the meaningful sheet inside a centered 5:4 safe frame. If the generator canvas is wider than 5:4, keep the extra far-left and far-right outer area as plain background only; no object, caption, panel line, or important detail may sit there.
-Make the layout almost exactly like this:
-- Left 55% to 60% of the canvas: ONE very large hero image of the object, cleanly rendered, centered vertically, showing the complete silhouette and key details.
-- Right 40% to 45% of the canvas: a tidy reference panel divided into SIX clear cells, arranged as 2 columns x 3 rows.
-- Right panel cell roles:
-  1. 정면 — 전체 비례
-  2. 측면 — 두께와 깊이
-  3. 3/4 정면 — 입체감
-  4. 상단 — 윗면 구조
-  5. 후면 — 뒷면 구조
-  6. 디테일 확대 — 질감과 부품
-- Keep all panel lines thin and subtle. Leave enough inner padding so captions never touch borders.
-- The sheet should feel like a wide product reference layout: large main object on the left, organized angle references on the right.
+Make the layout almost exactly like an asymmetric puzzle-tile board:
+- Use 7 to 8 tiles total, with mixed tile sizes. The tile grid must NOT be equal columns or equal rows.
+- One huge vertical hero tile occupies about 42% to 48% of the canvas width and 82% to 92% of the canvas height. Place it on the left or slightly off-center. It shows the complete object as the dominant reference.
+- Add one wide horizontal tile near the top-right or bottom-right, showing a long side/detail view. This tile should be clearly wider than it is tall.
+- Add two medium square tiles showing front view and 3/4 view.
+- Add two small vertical tiles showing side view and rear view.
+- Add one small square or horizontal close-up tile showing texture, joint, handle, button, surface, grain, cut edge, or structure.
+- Tiles should interlock like puzzle pieces: some tall, some square, some horizontal, with varied widths and heights but clean alignment.
+- Use thin light-gray borders and consistent gutters. The gutters should feel intentional, like a modular editorial board.
+- Avoid one giant empty area. Fill the 5:4 safe frame with balanced tile mass from left to right and top to bottom.
+- The composition should feel more dynamic than a catalog grid, but still clean and useful for drawing reference.
 
 [Image direction]
 - Every view must show the SAME object, same color, same material, same design.
 - Keep the object large in each cell.
+- Crop only secondary tiles when it helps the puzzle layout; never crop the main hero tile's essential silhouette.
 - Use clean product-reference lighting and a neutral background.
 - Show flat views and natural 3D views only.
 - The detail crop should show a useful texture, joint, surface, button, fabric, grain, cut edge, or structure depending on the object.
 
 [Captions]
 - Put a small Korean caption under each smaller view.
+- Captions must sit inside the tile or just under the object, with enough padding.
 - Captions should be short and practical:
   정면 — 전체 비례
   측면 — 두께와 깊이
@@ -2922,6 +2923,7 @@ Make the layout almost exactly like this:
 - NO section numbers like 01/02/03/04.
 - NO arrows, no brush labels, no stickers, no tape, no keyword boxes.
 - NO diagrams or sketch boxes.
+- NO rigid 2-column x 3-row panel and NO simple left-big/right-grid layout.
 - NO long paragraphs. Only small Korean captions under the angle views.
 - NO English text in the final image.
 - NO watermarks, random numbers, fake UI, dimensions, or unrelated captions.
