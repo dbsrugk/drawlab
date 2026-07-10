@@ -2887,12 +2887,12 @@ Use the selected final aspect frame, with a pure white #FFFFFF background only.
 Redesign the whole sheet for the selected frame. Do not squeeze a square grid into the frame.
 Compose the meaningful sheet inside the centered safe frame. If the generator canvas is larger than the selected final frame, keep the extra outer area as plain background only; no object, caption, panel line, or important detail may sit there.
 Make the layout almost exactly like an asymmetric puzzle-tile board:
-- Use 7 to 8 tiles total, with mixed tile sizes. The tile grid must NOT be equal columns or equal rows.
-- One large hero tile occupies about 35% to 44% of the safe frame area. It may be vertical, square, or slightly horizontal depending on the object shape. It shows the COMPLETE object as the dominant reference.
+- Use 5 to 6 tiles total, with mixed tile sizes. The tile grid must NOT be equal columns or equal rows.
+- One large hero tile occupies about 38% to 48% of the safe frame area. It may be vertical, square, or slightly horizontal depending on the object shape. It shows the COMPLETE object as the dominant reference.
 - Add one wide horizontal tile near the top-right or bottom-right, showing a long side/detail view. This tile should be clearly wider than it is tall.
 - Add two medium square tiles showing front view and 3/4 view.
-- Add two medium-small tiles showing side view and rear view. Do not make these tiles so narrow that the object gets cut.
-- Add one small square or horizontal close-up tile showing texture, joint, handle, button, surface, grain, cut edge, or structure.
+- Add one medium horizontal or vertical tile showing side view or rear view. Do not make this tile so narrow that the object gets cut.
+- Add one optional small square detail tile showing texture, joint, handle, button, surface, grain, cut edge, or structure.
 - Tiles should interlock like puzzle pieces: some tall, some square, some horizontal, with varied widths and heights but clean alignment.
 - Use thin light-gray borders and consistent gutters. The gutters should feel intentional, like a modular editorial board.
 - Avoid one giant empty area. Fill the safe frame with balanced tile mass from left to right and top to bottom.
@@ -2904,7 +2904,7 @@ Make the layout almost exactly like an asymmetric puzzle-tile board:
 - Fit each object inside its tile like product photography using object-contain, not object-cover.
 - Keep 10% to 16% inner padding between the object and tile borders.
 - Keep the object medium-large, but never so large that it touches or crosses the tile border.
-- Only the one tile labeled 디테일 확대 may crop into the object. All other tiles must show the full object or a complete meaningful part without cutting important edges.
+- Even the detail tile must avoid cutting at the tile border; show a complete meaningful component with visible margins.
 - Use clean product-reference lighting on a pure white #FFFFFF background.
 - The background inside every tile and around the full board must be pure white. No cream, beige, ivory, gray paper, warm off-white, vignette, texture wash, or colored background.
 - Show flat views and natural 3D views only.
@@ -2934,6 +2934,7 @@ Make the layout almost exactly like an asymmetric puzzle-tile board:
 - NO variation in object color, finish, or design between cells.
 - NO complex background, environment, scenery, props, cream paper, beige tint, gray backdrop, vignette, or warm off-white background.
 - NO heavy dramatic lighting or moody shadows.
+- NO cropped-off handles, clipped bases, cut bowls, cut knobs, cut drawers, or objects touching tile borders.
 
 [Purpose]
 This is a large-view angle reference sheet for an art student preparing to draw {PROMPT}. The student should mainly see the object clearly from many angles, with only small Korean captions to identify each view.{REF_PART}`;
@@ -4483,7 +4484,7 @@ async function callOpenAI(promptText, refs){
   // 비율 칩 선택값에 따라 사이즈 결정
   const sizeMap = {landscape:'1536x1024', portrait:'1024x1536', square:'1024x1024'};
   const size = sizeMap[state.aspectRatio] || '1536x1024';
-  const framedPrompt = withAspectComposition(promptText, state.aspectRatio);
+  const framedPrompt = withAspectComposition(promptText, state.aspectRatio, state.tab);
   
   if(isEdit){
     // 참고 이미지 있음 → /v1/images/edits (multipart/form-data)
@@ -4606,9 +4607,26 @@ function normalizeImageAspect(img, ratio){
   });
 }
 
-function withAspectComposition(promptText, ratio){
+function withAspectComposition(promptText, ratio, mode){
   if(ratio !== 'landscape' && ratio !== 'portrait') return promptText;
   const label = ratio === 'landscape' ? '5:4 가로형' : '4:5 세로형';
+  if(mode === 'research'){
+    const frameRule = ratio === 'portrait'
+      ? `FINAL FORMAT FIRST: create a 4:5 PORTRAIT material reference puzzle sheet. The design must read as a 4:5 vertical board, not 2:3, not A4, not square. Use a tall 4:5 safe frame with generous white margins inside every tile.`
+      : `FINAL FORMAT FIRST: create a 5:4 LANDSCAPE material reference puzzle sheet. The design must read as a 5:4 wide board, not 3:2, not square. Use a wide 5:4 safe frame with generous white margins inside every tile.`;
+    return `${frameRule}
+
+RESEARCH SHEET NON-CROPPING RULES:
+- Pure white #FFFFFF background only across the whole sheet and inside every tile.
+- Use 5 to 6 puzzle tiles maximum, not many tiny cells.
+- Every object view must be scaled down enough to show the complete silhouette with handle, base, top, bottom, side protrusions, and shadow fully visible.
+- Keep 14% to 20% white inner padding inside each tile.
+- No object may touch a tile edge. No handle, knob, base, bowl, drawer, caption, or panel line may be clipped.
+- If there is not enough space, make the object smaller and reduce the number of tiles. Never solve space by cropping.
+- Use mixed tile shapes: one large hero tile, one square tile, one horizontal tile, one vertical tile, and one small detail tile.
+
+${promptText}`;
+  }
   const safeArea = ratio === 'landscape'
     ? '좌우 가장자리 16~18%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 64~68% 안에서 완결한다.'
     : '상하 가장자리 16~18%는 배경, 흐름선, 반복 요소만 두고 핵심 소재와 글자형 요소는 중앙 64~68% 안에서 완결한다.';
