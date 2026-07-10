@@ -4573,20 +4573,25 @@ function normalizeImageAspect(img, ratio){
     const image = new Image();
     image.onload = () => {
       const sourceRatio = image.naturalWidth / image.naturalHeight;
-      let sx = 0, sy = 0, sw = image.naturalWidth, sh = image.naturalHeight;
       if(Math.abs(sourceRatio - targetRatio) < 0.01) return resolve(img);
+
+      let canvasW = image.naturalWidth;
+      let canvasH = image.naturalHeight;
       if(sourceRatio > targetRatio){
-        sw = Math.round(sh * targetRatio);
-        sx = Math.round((image.naturalWidth - sw) / 2);
+        canvasH = Math.round(canvasW / targetRatio);
       } else {
-        sh = Math.round(sw / targetRatio);
-        sy = Math.round((image.naturalHeight - sh) / 2);
+        canvasW = Math.round(canvasH * targetRatio);
       }
+
       const canvas = document.createElement('canvas');
-      canvas.width = sw;
-      canvas.height = sh;
+      canvas.width = canvasW;
+      canvas.height = canvasH;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(image, sx, sy, sw, sh, 0, 0, sw, sh);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+      const dx = Math.round((canvasW - image.naturalWidth) / 2);
+      const dy = Math.round((canvasH - image.naturalHeight) / 2);
+      ctx.drawImage(image, dx, dy);
       resolve({mimeType: 'image/png', dataUrl: canvas.toDataURL('image/png')});
     };
     image.onerror = () => resolve(img);
