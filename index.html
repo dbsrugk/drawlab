@@ -1540,6 +1540,12 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
           <div class="count-chip active" data-quality="medium">🎨 균형<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">추천</small></div>
           <div class="count-chip" data-quality="high">✨ 고품질<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">시범작</small></div>
         </div>
+        <div style="font-size:10px;color:var(--ink-3);margin:10px 0 5px;font-weight:700;letter-spacing:0.3px;">다운로드 로고 (미.술집)</div>
+        <div class="count-row" id="markRow">
+          <div class="count-chip" data-mark="none">없음<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">원본</small></div>
+          <div class="count-chip active" data-mark="badge">배지<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">인스타용</small></div>
+          <div class="count-chip" data-mark="tile">워터마크<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">미리보기용</small></div>
+        </div>
       </div>
     </div>
 
@@ -3548,6 +3554,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  initMarkRow();
+
   // 톤(정적/동적) 칩
   document.querySelectorAll('#toneRow .count-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -4797,19 +4805,83 @@ async function downloadImg(id){
   if(!card?._img) return;
   const safe = (card._meta.prompt || 'untitled').replace(/[^가-힣a-z0-9]/gi,'_').slice(0,20);
   const fname = `drawlab_${card._meta.tab}_${safe}_${Date.now()}.png`;
-  const du = card._img.dataUrl;
+  await saveImageWithMark(card._img.dataUrl, fname);
+}
+
+// ===== 미.술집 로고: 다운로드할 때만 덧씌움 (갤러리 원본은 그대로) =====
+const MARK_TEXT = 'mi.sulzip';
+function getMarkMode(){
+  try { return localStorage.getItem('drawlab_mark') || 'badge'; } catch(e){ return 'badge'; }
+}
+function initMarkRow(){
+  const row = document.getElementById('markRow');
+  if(!row) return;
+  const sync = () => row.querySelectorAll('.count-chip').forEach(c => c.classList.toggle('active', c.dataset.mark === getMarkMode()));
+  row.addEventListener('click', e => {
+    const chip = e.target.closest('.count-chip');
+    if(!chip) return;
+    try { localStorage.setItem('drawlab_mark', chip.dataset.mark); } catch(err){}
+    sync();
+  });
+  sync();
+}
+async function applyMark(src, mode){
+  const blob = await (await fetch(src)).blob();
+  const bmp = await createImageBitmap(blob);
+  const W = bmp.width, H = bmp.height, u = W / 700;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bmp, 0, 0);
+  bmp.close?.();
+  if(mode === 'tile'){
+    ctx.save();
+    ctx.font = `bold ${Math.round(22 * u)}px "Malgun Gothic", sans-serif`;
+    ctx.fillStyle = 'rgba(150,150,150,0.27)';
+    ctx.translate(W / 2, H / 2);
+    ctx.rotate(-20 * Math.PI / 180);
+    const sx = 230 * u, sy = 110 * u, R = Math.hypot(W, H);
+    for(let y = -R, row = 0; y < R; y += sy, row++){
+      for(let x = -R + (row % 2) * sx / 2; x < R; x += sx) ctx.fillText(MARK_TEXT, x, y);
+    }
+    ctx.restore();
+  }
+  // 우하단 배지 (배지·워터마크 공통)
+  const fs = Math.round(20 * u), px = 12 * u, py = 7 * u, m = 14 * u;
+  ctx.font = `bold ${fs}px "Malgun Gothic", sans-serif`;
+  const tw = ctx.measureText(MARK_TEXT).width;
+  const bw = tw + px * 2, bh = fs + py * 2, bx = W - bw - m, by = H - bh - m;
+  ctx.fillStyle = 'rgba(40,40,40,0.85)';
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 8 * u) : ctx.rect(bx, by, bw, bh);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(MARK_TEXT, bx + px, by + bh / 2);
+  return await new Promise((resolve, reject) => {
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('PNG 변환 실패')), 'image/png');
+  });
+}
+async function saveImageWithMark(du, fname){
+  if(!du) return;
   const a = document.createElement('a');
   try {
-    if(du && /^https?:/.test(du)){
+    const mode = getMarkMode();
+    let blob;
+    if(mode === 'none'){
       // 클라우드 URL → blob 받아서 저장 (다운로드 강제)
-      const blob = await (await fetch(du)).blob();
+      blob = /^https?:/.test(du) ? await (await fetch(du)).blob() : null;
+    } else {
+      blob = await applyMark(du, mode);
+    }
+    if(blob){
       const objUrl = URL.createObjectURL(blob);
       a.href = objUrl; a.download = fname; a.click();
       setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
     } else {
       a.href = du; a.download = fname; a.click();
     }
-    toast('다운로드 시작');
+    toast(mode === 'none' ? '다운로드 시작' : '로고 넣어서 다운로드 시작');
   } catch(e){
     console.error('다운로드 실패:', e);
     window.open(du, '_blank');
@@ -5852,22 +5924,7 @@ function setupLightbox(){
     if(!lb.currentDataUrl) return;
     const safe = (lb.currentMeta?.prompt || 'image').replace(/[^가-힣a-z0-9]/gi,'_').slice(0,20);
     const fname = `drawlab_${lb.currentMeta?.tab || 'img'}_${safe}_${Date.now()}.png`;
-    const du = lb.currentDataUrl;
-    const a = document.createElement('a');
-    try {
-      if(du && /^https?:/.test(du)){
-        const blob = await (await fetch(du)).blob();
-        const objUrl = URL.createObjectURL(blob);
-        a.href = objUrl; a.download = fname; a.click();
-        setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
-      } else {
-        a.href = du; a.download = fname; a.click();
-      }
-      toast('다운로드 시작');
-    } catch(e){
-      console.error('다운로드 실패:', e);
-      window.open(du, '_blank');
-    }
+    await saveImageWithMark(lb.currentDataUrl, fname);
   });
   
   // 배경 클릭 시 닫기 (이미지 자체는 닫지 않음)
