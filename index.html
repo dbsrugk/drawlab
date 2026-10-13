@@ -4714,6 +4714,7 @@ function updateCard(id, img, meta){
         <button class="result-btn" data-act="redir" data-id="${id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
         ${meta.tab === 'research' ? `<button class="result-btn" data-act="board" data-id="${id}" title="이 소재 자료 이미지를 바탕으로 A4 분석 보드 생성" style="background:#1e7e34;color:#fff;border-color:#1e7e34;">📋 분석</button>` : ''}
         ${meta.tab === 'research' ? `<button class="result-btn" data-act="dyn" data-id="${id}" title="이 소재의 역동적인 순간(터짐·부러짐·울림 등)으로 변환" style="background:#c0392b;color:#fff;border-color:#c0392b;">⚡ 역동</button>` : ''}
+        ${meta.tab === 'research' ? `<button class="result-btn" data-act="cuts" data-id="${id}" title="모음컷의 칸들을 각각 단독 고화질 이미지로 생성" style="background:#0d6efd;color:#fff;border-color:#0d6efd;">✂️ 개별컷</button>` : ''}
         <button class="result-btn" data-act="to3d" data-id="${id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
         <button class="result-btn" data-act="del" data-id="${id}">×</button>
       </div>
@@ -4735,6 +4736,7 @@ function bindCardActions(card, id){
       else if(act === 're') regenerate(id);
       else if(act === 'redir') showRedirectModal(id);
       else if(act === 'to3d') convertTo3D(id);
+      else if(act === 'cuts') showCutsModal(id);
       else if(act === 'board') convertToAnalysisBoard(id);
       else if(act === 'dyn') convertToDynamic(id);
       else if(act === 'del') deleteOne(id);
@@ -4780,6 +4782,7 @@ function addCompletedCard(rec, num){
         <button class="result-btn" data-act="redir" data-id="${rec.id}" title="디렉팅 방향을 바꿔서 재생성">🔧 손보기</button>
         ${rec.tab === 'research' ? `<button class="result-btn" data-act="board" data-id="${rec.id}" title="이 소재 자료 이미지를 바탕으로 A4 분석 보드 생성" style="background:#1e7e34;color:#fff;border-color:#1e7e34;">📋 분석</button>` : ''}
         ${rec.tab === 'research' ? `<button class="result-btn" data-act="dyn" data-id="${rec.id}" title="이 소재의 역동적인 순간(터짐·부러짐·울림 등)으로 변환" style="background:#c0392b;color:#fff;border-color:#c0392b;">⚡ 역동</button>` : ''}
+        ${rec.tab === 'research' ? `<button class="result-btn" data-act="cuts" data-id="${rec.id}" title="모음컷의 칸들을 각각 단독 고화질 이미지로 생성" style="background:#0d6efd;color:#fff;border-color:#0d6efd;">✂️ 개별컷</button>` : ''}
         <button class="result-btn" data-act="to3d" data-id="${rec.id}" title="같은 구성을 3D 렌더링으로 변환" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;">🎲 3D</button>
         <button class="result-btn" data-act="del" data-id="${rec.id}">×</button>
       </div>
@@ -5315,6 +5318,134 @@ async function _runAnalysisBoard(id){
     throw err;
   }
   state.aspectRatio = prevRatio;
+}
+
+// ============ ✂️ 개별컷: 모음컷의 칸을 하나씩 단독 이미지로 ============
+const CUT_TYPES = [
+  {key:'main',   label:'메인 — 3/4 전체',        ratio:'portrait',  desc:'가장 큰 메인 칸 (앞에서 본 3/4 전체 모습)'},
+  {key:'front',  label:'정면 — 전체 비례',        ratio:'portrait',  desc:'정면에서 본 전체'},
+  {key:'q34',    label:'3/4 정면 — 입체감',       ratio:'portrait',  desc:'비스듬한 3/4 정면'},
+  {key:'side',   label:'측면 — 두께와 깊이',      ratio:'landscape', desc:'옆에서 본 측면'},
+  {key:'back',   label:'후면 — 뒷면 구조',        ratio:'portrait',  desc:'뒤에서 본 후면'},
+  {key:'top',    label:'상단 — 윗면 구조',        ratio:'landscape', desc:'위에서 내려다본 탑뷰'},
+  {key:'detail', label:'디테일 확대 — 질감과 부품', ratio:'portrait',  desc:'질감·부품 클로즈업'}
+];
+const CUT_PRICE = {low: 15, medium: 55, high: 230};
+
+function showCutsModal(id){
+  const card = document.getElementById(id);
+  if(!card?._meta || !card?._img?.dataUrl){ toast('원본 이미지를 찾을 수 없습니다 (생성 중일 수 있음)'); return; }
+  const q = card._meta.quality || state.quality || 'medium';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section">
+      <h4 style="font-size:18px;margin-bottom:6px;">✂️ 개별컷 만들기</h4>
+      <div style="font-size:13px;color:#1a1a1a;line-height:1.6;margin-bottom:12px;">
+        모음컷의 칸을 하나씩 <strong>단독 고화질 이미지</strong>로 다시 만들어요.<br>
+        만들 칸을 고르세요. 칸마다 1장씩 생성됩니다.
+      </div>
+      <div id="cutPickList">
+        ${CUT_TYPES.map(c => `
+          <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #dadada;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#fff;">
+            <input type="checkbox" value="${c.key}" checked style="width:16px;height:16px;">
+            <span style="flex:1;font-size:14px;font-weight:700;">${c.label}</span>
+            <span style="font-size:11px;color:#7a7a7a;">${c.desc}</span>
+          </label>`).join('')}
+      </div>
+      <div id="cutCost" style="font-size:12px;color:#7a7a7a;margin:10px 0 4px;"></div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="result-btn" onclick="closeModal()" style="padding:9px 18px;">취소</button>
+        <button class="result-btn" id="cutGoBtn" style="padding:9px 18px;background:#0d6efd;color:#fff;border-color:#0d6efd;">만들기</button>
+      </div>
+    </div>`;
+  const update = () => {
+    const n = document.querySelectorAll('#cutPickList input:checked').length;
+    document.getElementById('cutCost').textContent = `${n}장 · 품질 ${q} · 예상 약 ${n * (CUT_PRICE[q] || 55)}원`;
+  };
+  document.querySelectorAll('#cutPickList input').forEach(i => i.addEventListener('change', update));
+  update();
+  document.getElementById('cutGoBtn').addEventListener('click', () => {
+    const keys = [...document.querySelectorAll('#cutPickList input:checked')].map(i => i.value);
+    closeModal();
+    if(!keys.length) return;
+    makeIndividualCuts(id, keys);
+  });
+  document.getElementById('modal').classList.add('show');
+}
+
+function makeIndividualCuts(id, keys){
+  if(!state.apiKey){ toast('API 키를 먼저 저장해주세요'); return; }
+  keys.forEach(k => {
+    const cut = CUT_TYPES.find(c => c.key === k);
+    if(cut) enqueueJob({ label: '✂️ ' + cut.label, run: () => _runCut(id, cut) });
+  });
+  toast(`✂️ 개별컷 ${keys.length}장 대기열 추가`);
+}
+
+async function _runCut(id, cut){
+  const card = document.getElementById(id);
+  if(!card?._meta || !card?._img?.dataUrl) throw new Error('원본 카드를 찾을 수 없음');
+  const baseMeta = card._meta;
+  const baseImg = card._img;
+  const isData = baseImg.dataUrl.startsWith('data:');
+  const subject = (baseMeta.prompt || '소재').replace(/^[^\w가-힣]+/, '').trim();
+  const fullPrompt = `첨부 이미지는 '${subject}' 하나를 여러 각도로 모은 소재 자료(모음컷) 시트입니다.
+이 시트에서 '${cut.label}' 칸(${cut.desc})에 해당하는 모습만 골라, 단독 제품 사진 한 장으로 고퀄리티로 다시 제작하세요.
+
+[반드시 지킬 것]
+- 시트 속 같은 물체: 형태·비율·색·재질·반사·디테일을 그대로 유지 (새로 디자인하거나 바꾸지 말 것)
+- 순백(#FFFFFF) 배경, 바닥 접지 그림자만
+- 물체 하나만 화면 중앙에 크게, 잘리지 않게 여백 확보 (디테일 확대 컷은 클로즈업 허용)
+- 글자·라벨·칸 테두리·번호·로고·워터마크 일체 금지
+- 다른 칸의 각도나 여러 컷을 섞지 말 것`;
+
+  const newMeta = {
+    prompt: subject + ' · ' + cut.label.split(' — ')[0],
+    composition: '',
+    tone: baseMeta.tone || 'static',
+    intent: baseMeta.intent || 'seolmyeong',
+    whitespace: baseMeta.whitespace || 'normal',
+    effects: 'none',
+    count: 1,
+    quality: baseMeta.quality || state.quality || 'medium',
+    aspectRatio: cut.ratio,
+    heavyMode: false,
+    refs: [{ name: 'cuts-source.png', mimeType: 'image/png', dataUrl: baseImg.dataUrl,
+             base64: isData ? baseImg.dataUrl.split(',')[1] : undefined }],
+    styleRefs: [], compRefs: [], supportSubjects: '', examInfo: null,
+    fullPrompt,
+    isCut: true,
+    sourceId: id,
+    sourceTabLabel: baseMeta.tabLabel || '소재 자료',
+    tabLabel: '✂️ 개별컷',
+    tab: 'cut',
+    timestamp: Date.now()
+  };
+
+  const prevRatio = state.aspectRatio, prevTab = state.tab, prevQ = state.quality;
+  state.aspectRatio = cut.ratio;
+  state.tab = 'cut';                 // 소재자료용 그리드 지시문이 붙지 않게
+  state.quality = newMeta.quality;
+  const restore = () => { state.aspectRatio = prevRatio; state.tab = prevTab; state.quality = prevQ; };
+
+  const newId = 'r_' + Date.now() + '_cut_' + cut.key;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').style.display = 'grid';
+  addPlaceholderCard(newId, newMeta, state.results.length + 1);
+
+  try {
+    const img = await callOpenAI(newMeta.fullPrompt, newMeta.refs);
+    restore();
+    updateCard(newId, img, newMeta);
+    const record = {...newMeta, image: img, id: newId};
+    state.results.unshift(record);
+    await dbSave(record);
+    document.getElementById('counter').textContent = `생성 ${state.results.length}건 (영구 저장)`;
+    document.getElementById('clearAllBtn').style.display = 'block';
+  } catch(err){
+    restore();
+    showError(newId, err.message);
+    throw err;
+  }
 }
 
 // ============ ⏳ 생성 대기열(큐) ============
