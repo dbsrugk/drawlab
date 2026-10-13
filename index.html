@@ -2627,7 +2627,7 @@ async function runHeavyDirecting(progressCallback){
   // 참고이미지를 멀티모달로 함께 전달
   const content1 = [{type: 'text', text: analyzePrompt}];
   if(state.refs && state.refs.length){
-    content1.push({type: 'text', text: '\n\n[소재 참고 이미지 — 이 사물들의 형태·재질을 정확히 분석에 반영]'});
+    content1.push({type: 'text', text: '\n\n[소재 참고 이미지 — 이 사물들의 형태·재질과 함께 포즈·기울기·흐름 방향·화면 속 배치(동세)를 정확히 분석하고, 후보 3안 모두 그 동세를 유지할 것]'});
     state.refs.forEach(r => content1.push({type: 'image_url', image_url: {url: r.dataUrl}}));
   }
   if(!isFocal && state.compRefs && state.compRefs.length){
@@ -2756,7 +2756,7 @@ ${toneLabel}
   
   // 사물 참고 이미지
   if(refs.length > 0){
-    content.push({type: 'text', text: '\n\n[그릴 사물의 참고 이미지]'});
+    content.push({type: 'text', text: '\n\n[그릴 사물의 참고 이미지 — 이 이미지의 포즈·기울기·흐름 방향(S자·소용돌이·뻗어나감)·화면 속 위치를 구체적으로 짚고, 구성안에서도 그 동세를 그대로 유지할 것. 차분한 정면·정지 자세로 바꾸지 말 것]'});
     refs.forEach(r => {
       content.push({type: 'image_url', image_url: {url: r.dataUrl}});
     });
@@ -4288,6 +4288,35 @@ function confirmApplyExam(){
 }
 
 // ============ 프롬프트 빌더 ============
+// ============ 🌀 동세·구도 보존 블록 ============
+// 업로드 이미지(사물 참고·구도 참고)의 포즈·흐름·배치를 정적으로 정리하지 않고 그대로 살리게 강제
+// 이미지 전달 순서: 사물 참고(refs) → 구도 참고(compRefs) → 스타일 참고(styleRefs)
+function buildMotionLockBlock(){
+  const nRefs = (state.refs || []).length;
+  const nComp = (state.tab === 'research' || state.tab === 'board') ? 0 : (state.compRefs || []).length;
+  if(!nRefs && !nComp) return '';
+  const nStyle = (state.styleRefs || []).length;
+  const order = [];
+  const rng = (a, n) => n === 1 ? `${a}번` : `${a}~${a + n - 1}번`;
+  let idx = 1;
+  if(nRefs){ order.push(`${rng(idx, nRefs)} = 사물 참고`); idx += nRefs; }
+  if(nComp){ order.push(`${rng(idx, nComp)} = 구도 참고`); idx += nComp; }
+  if(nStyle){ order.push(`${rng(idx, nStyle)} = 스타일 참고(표현 방식만)`); }
+  const target = nComp ? '구도 참고 이미지' : '사물 참고 이미지';
+  return `
+
+[★ 동세·구도 보존 — 최우선 규칙 ★]
+첨부 이미지 순서: ${order.join(' / ')}
+${target}의 움직임과 화면 구성을 차분하게 정리하거나 정면·정지 자세로 바꾸지 말 것. 아래 요소는 원본과 같게 유지한다:
+- 포즈·기울기·몸통/사물의 축 방향 (숙이고, 비틀고, 기울어진 각도 그대로)
+- 주된 흐름선의 방향과 곡률 (S자·소용돌이·나선·휘몰아침, 바깥으로 뻗어나가는 끝단)
+- 화면 안 위치와 크기 비율, 대각선 배치, 프레임 밖으로 빠져나가는 요소, 여백의 위치
+- 깃털·천·끈·물줄기 같은 길게 뻗는 요소의 개수감·리듬·겹침·끝의 날림
+- 속도감 있는 붓 터치와 끝이 가늘어지는 획
+정적인 제품 사진, 중앙 정렬된 얌전한 배치, 좌우대칭으로 정리된 결과는 실패로 간주한다.
+원본 작가의 서명·워터마크·글자는 넣지 않는다. 동세와 구도는 살리되, 결과물은 우리 소재와 입시 작품 표현으로 새로 그린 그림이어야 한다.`;
+}
+
 function buildPrompt(analysis){
   let refPart = '';
   if(state.refs.length){
@@ -4299,8 +4328,11 @@ function buildPrompt(analysis){
     } else if(state.tab === 'research'){
       refPart += `\n\n[업로드 이미지 활용]\n첨부된 ${state.refs.length}장의 이미지는 소재 식별과 구조 확인용 참고자료다. 현재 선택된 소재는 "${state.prompt || '소재'}" 하나이며, 다른 메인/보조 소재가 함께 보이더라도 이번 소재 자료에는 "${state.prompt || '소재'}"의 각도별 큰 이미지와 짧은 캡션만 정리한다.`;
     } else {
-      refPart += `\n\n[사물 참고 이미지 활용]\n첨부된 ${state.refs.length}장의 사물 참고 이미지에 등장하는 소재·요소·색감·분위기를 적극 차용하되, 한국 미대 입시 작품으로 재해석. 사진을 그대로 베끼지 말고 입시 작품 스타일로 변환.`;
+      refPart += `\n\n[사물 참고 이미지 활용]\n첨부된 ${state.refs.length}장의 사물 참고 이미지에 등장하는 소재·요소·색감·분위기를 적극 차용하되, 한국 미대 입시 작품으로 재해석한다. 단, 참고 이미지의 포즈·동세·흐름은 바꾸지 않는다(아래 [동세·구도 보존] 규칙 우선).`;
     }
+  }
+  if(state.tab !== 'research' && state.tab !== 'board'){
+    refPart += buildMotionLockBlock();
   }
   if(state.styleRefs && state.styleRefs.length){
     refPart += `\n\n[🎨 스타일 참고 이미지 활용]\n별도로 첨부된 ${state.styleRefs.length}장의 스타일 참고 이미지에서 다음을 반영하라:\n- 채색감 (마카·수채·과슈·색연필 등 사용 방식)\n- 붓 터치와 표현 방식\n- 색조·톤·명도 대비 패턴\n- 디테일 묘사 방식\n- 전체적인 화풍·완성도 톤\n중요: 스타일 참고 이미지의 사물·구도·소재는 무시할 것. 오로지 '어떻게 그렸는지'(표현 방식, 필치, 채색 방법)만 차용. 우리 작품의 소재·구도는 본문에 명시된 것을 따른다.`;
@@ -4397,7 +4429,7 @@ async function generate(){
       heavyResult = await runHeavyDirecting((msg) => {
         document.getElementById('genBtnText').textContent = '🎬 ' + msg;
       });
-      fullPrompt = heavyResult.finalPrompt;
+      fullPrompt = heavyResult.finalPrompt + buildMotionLockBlock();
       analysis = JSON.stringify(heavyResult.analysis, null, 2);
       console.log('[Heavy 디렉팅 완료]', heavyResult);
     } catch(err){
@@ -4463,8 +4495,9 @@ async function generate(){
   // 🚀 병렬 생성
   const promises = placeholders.map(async (id) => {
     try {
-      // 사물 참고 + 스타일 참고를 합쳐서 전달
-      const allRefs = [...meta.refs, ...(meta.styleRefs || [])];
+      // 사물 참고 + 구도 참고 + 스타일 참고 순서로 전달 (buildMotionLockBlock의 번호 순서와 동일)
+      const compForImage = (meta.tab === 'research' || meta.tab === 'board') ? [] : (meta.compRefs || []);
+      const allRefs = [...meta.refs, ...compForImage, ...(meta.styleRefs || [])];
       const img = await callOpenAI(meta.fullPrompt, allRefs);
       const record = {...meta, image: img, id};
       updateCard(id, img, meta);
@@ -4506,6 +4539,8 @@ async function callOpenAI(promptText, refs){
     formData.append('size', size);
     formData.append('quality', quality);
     formData.append('n', '1');
+    // 참고 이미지의 형태·동세를 최대한 그대로 따르도록 (지원 안 되면 아래에서 자동 제외 후 재시도)
+    formData.append('input_fidelity', 'high');
     
     for(let i=0; i<refs.length; i++){
       const r = refs[i];
@@ -4540,6 +4575,17 @@ async function callOpenAI(promptText, refs){
       headers: {'Authorization': `Bearer ${state.apiKey}`},
       body: formData
     });
+    if(res.status === 400){
+      const peek = await res.clone().text();
+      if(/input_fidelity/i.test(peek)){
+        formData.delete('input_fidelity');
+        res = await fetch('https://api.openai.com/v1/images/edits', {
+          method: 'POST',
+          headers: {'Authorization': `Bearer ${state.apiKey}`},
+          body: formData
+        });
+      }
+    }
   } else {
     res = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -5880,7 +5926,7 @@ async function doRedirect(id, key, customText=''){
   addPlaceholderCard(newId, newMeta, state.results.length + 1);
   
   try {
-    const allRefs = [...newMeta.refs, ...(newMeta.styleRefs || [])];
+    const allRefs = [...newMeta.refs, ...((newMeta.tab === 'research' || newMeta.tab === 'board') ? [] : (newMeta.compRefs || [])), ...(newMeta.styleRefs || [])];
     const img = await callOpenAI(newMeta.fullPrompt, allRefs);
     updateCard(newId, img, newMeta);
     const record = {...newMeta, image: img, id: newId};
@@ -6050,7 +6096,7 @@ async function regenerate(id){
   }, 1000);
   
   try {
-    const allRefs = [...meta.refs, ...(meta.styleRefs || [])];
+    const allRefs = [...meta.refs, ...((meta.tab === 'research' || meta.tab === 'board') ? [] : (meta.compRefs || [])), ...(meta.styleRefs || [])];
     const img = await callOpenAI(meta.fullPrompt, allRefs);
     // 새 record로 저장 (기존은 유지, 새 ID로)
     const newMeta = {...meta, timestamp: Date.now()};
@@ -6277,6 +6323,52 @@ function closeLightbox(){
   document.getElementById('lightbox').classList.remove('show');
   document.body.style.overflow = '';
 }
+
+// ============ 📱 갤럭시(안드로이드) 뒤로가기 처리 ============
+// 뒤로가기 → 열린 창(라이트박스·모달)부터 닫고, 첫 화면에선 "한 번 더 누르면 종료"
+(function setupBackButton(){
+  let lastBackAt = 0;
+  let leaving = false;
+  const pushGuard = () => {
+    try { history.pushState({drawlabGuard: true}, ''); } catch(e){}
+  };
+  try {
+    if(!(history.state && history.state.drawlabGuard)){
+      history.replaceState({drawlabRoot: true}, '');
+      pushGuard();
+    }
+  } catch(e){}
+
+  window.addEventListener('popstate', () => {
+    if(leaving) return;
+    const lbEl = document.getElementById('lightbox');
+    const modalEl = document.getElementById('modal');
+    if(lbEl && lbEl.classList.contains('show')){
+      closeLightbox();
+      pushGuard();
+      return;
+    }
+    if(modalEl && modalEl.classList.contains('show')){
+      closeModal();
+      pushGuard();
+      return;
+    }
+    const now = Date.now();
+    if(typeof state !== 'undefined' && state.generating){
+      toast('이미지 생성 중이라 종료하지 않았어요');
+      pushGuard();
+      return;
+    }
+    if(now - lastBackAt < 2000){
+      leaving = true;
+      history.back();   // 두 번째 뒤로가기 → 실제 종료
+      return;
+    }
+    lastBackAt = now;
+    toast('한 번 더 누르면 종료돼요');
+    pushGuard();
+  });
+})();
 
 let toastTimer;
 function toast(msg){
