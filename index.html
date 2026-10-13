@@ -1546,6 +1546,11 @@ body.heavy-on .chrome-blob{ filter:contrast(1.2) brightness(1.05); opacity:0.85;
           <div class="count-chip active" data-mark="badge">배지<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">인스타용</small></div>
           <div class="count-chip" data-mark="tile">워터마크<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">미리보기용</small></div>
         </div>
+        <div style="font-size:10px;color:var(--ink-3);margin:10px 0 5px;font-weight:700;letter-spacing:0.3px;">저장 비율 (인스타 잘림 방지)</div>
+        <div class="count-row" id="fitRow">
+          <div class="count-chip active" data-fit="insta">4:5 · 5:4<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">여백 추가</small></div>
+          <div class="count-chip" data-fit="orig">원본 비율<small style="display:block;font-size:8px;font-weight:400;opacity:.7;margin-top:1px;">그대로</small></div>
+        </div>
       </div>
     </div>
 
@@ -3555,6 +3560,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   initMarkRow();
+  initFitRow();
 
   // 톤(정적/동적) 칩
   document.querySelectorAll('#toneRow .count-chip').forEach(chip => {
@@ -4828,15 +4834,61 @@ function initMarkRow(){
   });
   sync();
 }
-async function applyMark(src, mode){
+// ===== 인스타 비율: 저장·복사 때 4:5(세로) / 5:4(가로)로 맞춤 — 자르지 않고 배경색 여백 추가 =====
+function getFitMode(){
+  try { return localStorage.getItem('drawlab_fit') || 'insta'; } catch(e){ return 'insta'; }
+}
+function initFitRow(){
+  const row = document.getElementById('fitRow');
+  if(!row) return;
+  const sync = () => row.querySelectorAll('.count-chip').forEach(c => c.classList.toggle('active', c.dataset.fit === getFitMode()));
+  row.addEventListener('click', e => {
+    const chip = e.target.closest('.count-chip');
+    if(!chip) return;
+    try { localStorage.setItem('drawlab_fit', chip.dataset.fit); } catch(err){}
+    sync();
+  });
+  sync();
+}
+function instaSize(w, h){
+  const r = w / h;
+  if(Math.abs(r - 0.8) < 0.01 || Math.abs(r - 1.25) < 0.01) return null;
+  if(r <= 1) return r >= 0.8 ? [w, Math.round(w / 0.8)] : [Math.round(h * 0.8), h];
+  return r <= 1.25 ? [Math.round(h * 1.25), h] : [w, Math.round(w / 1.25)];
+}
+function edgeColor(ctx, w, h){
+  const px = [];
+  const pick = (x, y) => { const d = ctx.getImageData(x, y, 1, 1).data; px.push([d[0], d[1], d[2]]); };
+  for(let i = 0; i <= 40; i++){
+    const x = Math.min(w - 1, Math.round(i * (w - 1) / 40)), y = Math.min(h - 1, Math.round(i * (h - 1) / 40));
+    pick(x, 0); pick(x, h - 1); pick(0, y); pick(w - 1, y);
+  }
+  const med = k => px.map(p => p[k]).sort((a, b) => a - b)[px.length >> 1];
+  return `rgb(${med(0)},${med(1)},${med(2)})`;
+}
+async function exportImage(src, mode, fit){
   const blob = await (await fetch(src)).blob();
   const bmp = await createImageBitmap(blob);
-  const W = bmp.width, H = bmp.height, u = W / 700;
+  const src0 = document.createElement('canvas');
+  src0.width = bmp.width; src0.height = bmp.height;
+  const sctx = src0.getContext('2d');
+  sctx.drawImage(bmp, 0, 0);
+  bmp.close?.();
+  const target = fit === 'insta' ? instaSize(src0.width, src0.height) : null;
+  const W = target ? target[0] : src0.width, H = target ? target[1] : src0.height, u = W / 700;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(bmp, 0, 0);
-  bmp.close?.();
+  if(target){
+    ctx.fillStyle = edgeColor(sctx, src0.width, src0.height);
+    ctx.fillRect(0, 0, W, H);
+  }
+  ctx.drawImage(src0, Math.round((W - src0.width) / 2), Math.round((H - src0.height) / 2));
+  if(mode === 'none'){
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('PNG 변환 실패')), 'image/png');
+    });
+  }
   if(mode === 'tile'){
     ctx.save();
     ctx.font = `bold ${Math.round(22 * u)}px "Malgun Gothic", sans-serif`;
@@ -4869,13 +4921,13 @@ async function saveImageWithMark(du, fname){
   if(!du) return;
   const a = document.createElement('a');
   try {
-    const mode = getMarkMode();
+    const mode = getMarkMode(), fit = getFitMode();
     let blob;
-    if(mode === 'none'){
+    if(mode === 'none' && fit !== 'insta'){
       // 클라우드 URL → blob 받아서 저장 (다운로드 강제)
       blob = /^https?:/.test(du) ? await (await fetch(du)).blob() : null;
     } else {
-      blob = await applyMark(du, mode);
+      blob = await exportImage(du, mode, fit);
     }
     if(blob){
       const objUrl = URL.createObjectURL(blob);
@@ -4884,7 +4936,7 @@ async function saveImageWithMark(du, fname){
     } else {
       a.href = du; a.download = fname; a.click();
     }
-    toast(mode === 'none' ? '다운로드 시작' : '로고 넣어서 다운로드 시작');
+    toast([fit === 'insta' ? '인스타 비율' : '', mode === 'none' ? '' : '로고'].filter(Boolean).join('·') + (mode === 'none' && fit !== 'insta' ? '다운로드 시작' : ' 적용해서 다운로드 시작'));
   } catch(e){
     console.error('다운로드 실패:', e);
     window.open(du, '_blank');
@@ -4915,8 +4967,8 @@ async function copyImageDataUrl(src){
     throw new Error('이 브라우저가 이미지 클립보드를 지원하지 않습니다');
   }
   // 다운로드와 같은 로고 설정 적용 (Promise로 넘겨야 클릭 직후 권한이 유지됨)
-  const mode = getMarkMode();
-  const blob = mode === 'none' ? imageUrlToPngBlob(src) : applyMark(src, mode);
+  const mode = getMarkMode(), fit = getFitMode();
+  const blob = (mode === 'none' && fit !== 'insta') ? imageUrlToPngBlob(src) : exportImage(src, mode, fit);
   await navigator.clipboard.write([
     new ClipboardItem({'image/png': blob})
   ]);
