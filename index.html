@@ -2968,8 +2968,10 @@ The composition must match this ratio and layout: tall A4 portrait poster, appro
 - Do not make it look like a rigid textbook page. It should feel like a polished art-school portfolio board with useful visual cues.
 - Text budget for the whole poster: maximum 18 short Korean keyword phrases total. No paragraph may appear anywhere.
 - Each label must be 2 to 7 Korean characters when possible. Avoid full sentences.
-- Make important words large and visible: 확대, 절단, 반복, 리듬, 대비, 투명, 반사, 관통, 감김, 회전, 분해, 흐름, 주제부.
-- Remove generic or formal filler. Only include words that help drawing composition, material expression, or effect choice.
+- Every label must describe something TRUE and VISIBLE about THIS specific material (its parts, shapes, proportions, surface).
+- Do NOT use generic composition jargon as labels anywhere on the poster: 주제부, 확대, 절단, 겹침, 반복, 리듬, 흐름, 곡선, 대비, 방향성, 운동감, 구조감. Students cannot tell what these mean on a poster.
+- Remove generic or formal filler. Only include words a student needs to draw this material correctly.
+- Korean spelling must be perfect. Double-check every label; never output broken or misspelled Hangul.
 
 [Top title area — mandatory]
 - At the very top, create a large Korean hand-brushed title using the material name.
@@ -2989,23 +2991,25 @@ Use a clean visual board below the title, with 4 compact visual zones. These zon
 - Pick the most useful views for drawing, not formal views.
 - Avoid captions like 정면/측면 unless truly necessary. Prefer useful labels like 전체형, 핵심부, 질감.
 
-02. 형태 분석 + 구성 적용
+02. 형태 특징
+- Block header text must be exactly: 02 형태 특징
 - This is the largest middle block.
 - Place a large sketch-rendering of the material in the center.
 - Style: pencil sketch + marker coloring + realistic light and shadow.
-- Add arrows and effect marks around the main form.
-- Use only keyword tags around the sketch, not explanatory notes.
-- Show composition-use actions visually: enlarge, cut, overlap, rotate, repeat, flow, contrast.
-- Put 6 to 8 large keyword tags around the central sketch.
-- Suggested tag style: 주제부, 확대, 절단, 반복, 곡선, 반사, 질감, 리듬.
-- Add 2 small diagram thumbnails only if they communicate a real composition idea.
+- Put 5 to 6 callout labels around the sketch. Each label has a thin leader line/arrow that touches the EXACT part it describes.
+- Each label = [part] + [its visual feature], 4 to 12 Korean characters, describing what makes THIS material look like itself.
+  Example for a pig: 둥근 원통 몸통 / 접혀 내린 삼각 귀 / 원통형 코·콧구멍 2개 / 짧고 굵은 다리 / 두 갈래 발굽 / 돼지꼬리 나선
+  Example for a teapot: 둥근 공 몸통 / 휘어 올라간 주둥이 / 고리형 손잡이 / 납작한 뚜껑 꼭지
+- Optionally overlay faint basic-shape guide lines (sphere, cylinder, cone) on the sketch and name them in the labels (예: 몸통=원기둥).
+- No composition jargon labels here (주제부, 확대, 절단, 리듬, 곡선, 반복, 흐름 are forbidden in this block).
 
 03. 질감 및 색상 분석
 - This block sits in the lower-left area.
 - Show 2 texture close-up images.
 - Put one short keyword under each.
 - Add 5 to 6 circular color palette chips.
-- Use large words for the most important expression effects: 광택, 반사, 거침, 투명, 그림자, 하이라이트.
+- Under the chips, add 3 to 4 short surface words that are TRUE for this material only (예: 돼지 → 매끈한 피부 · 짧은 털 · 촉촉한 코). Never list effects the material does not have (no 투명/반사 for skin or fur).
+- Add one tiny light-and-shadow strip for the main form: 명부 · 중간 · 암부 · 반사광 · 그림자, with the shadow drawn on the ground plane and a soft reflected light at the bottom edge of the form.
 
 04. 기초디자인 활용 포인트
 - This block sits in the lower-right area.
@@ -3014,11 +3018,11 @@ Use a clean visual board below the title, with 4 compact visual zones. These zon
 - Example keyword thumbnails: 근경확대, 중경주제, 원경반복, 사선흐름, 회전구성, 대비강조.
 - Add one dynamic effect sketch using arrows, speed lines, splashes, fragments, or rhythm lines only when it fits the material.
 
-[Bottom keyword box]
-- Add a horizontal keyword box at the very bottom.
-- Include exactly 6 to 8 Korean keywords that fit the material.
-- Keywords should be composition-useful, not only descriptive.
-- Example style: 주제부, 확대, 절단, 겹침, 반복, 리듬, 대비, 방향성, 질감대비, 구조감, 운동감.
+[Bottom summary box]
+- Add a horizontal box at the very bottom titled: 핵심 특징
+- Include exactly 4 to 5 short phrases that summarize what a student must not miss when drawing THIS material.
+- Example for a pig: 원통 몸통 · 삼각 귀 · 원통 코 · 짧은 다리 · 나선 꼬리
+- No composition jargon (주제부, 확대, 절단, 리듬, 반복, 흐름 등) in this box.
 
 [Composition-use priority]
 - This board is for Korean basic-design composition preparation.
@@ -5726,7 +5730,7 @@ const REDIRECT_OPTIONS_RESEARCH = [
 
 const REDIRECT_OPTIONS_BOARD = [
   {key:'board_title', label:'제목 크게', icon:'T', hint:'상단 소재명과 부제목이 확실히 보이게'},
-  {key:'board_basic_design', label:'핵심 단어 강화', icon:'✦', hint:'확대·절단·반복·리듬·대비 같은 단어가 크게 보이게'},
+  {key:'board_basic_design', label:'특징 라벨 강화', icon:'✦', hint:'이 소재만의 부위별 특징(예: 원통 몸통·삼각 귀)이 크게 보이게'},
   {key:'board_less_text', label:'문장 제거', icon:'≡', hint:'긴 문장/형식 글을 빼고 키워드만 남기기'},
   {key:'board_more_diagrams', label:'효과 선명하게', icon:'⌁', hint:'화살표·흐름선·효과 표시를 더 명확하게'},
   {key:'board_layout_like_sample', label:'키워드 보드', icon:'▯', hint:'A4 세로, 이미지와 큰 키워드 중심'},
@@ -5750,10 +5754,10 @@ const REDIRECT_INSTRUCTIONS = {
   research_detail_fix: '\n\n[추가 수정 지시 — 디테일 컷 보강]\n디테일 확대 컷은 소재의 가장 중요한 질감, 부품, 연결부, 단면, 버튼, 표면 패턴 중 하나가 명확하게 보이도록 크게 보여준다. 흐릿하거나 의미 없는 확대는 피한다.',
   research_clean_grid: '\n\n[추가 수정 지시 — 격자 정리]\n라디오 소재자료 예시처럼 큰 대표컷 + 정돈된 하단 격자 구조로 만든다. 흰색/오프화이트 배경, 얇은 구분선, 일정한 간격, 깔끔한 캡션 정렬을 유지한다.',
   board_title: '\n\n[추가 수정 지시 — 제목 강화]\nA4 분석 보드 상단에 소재명이 큰 한글 제목으로 확실히 보여야 한다. 제목과 짧은 부제목을 눈에 띄게 배치하고, 제목 없는 분석지처럼 보이지 않게 한다.',
-  board_basic_design: '\n\n[추가 수정 지시 — 핵심 단어 강화]\n설명문보다 필요한 단어가 크게 보여야 한다. 확대, 절단, 반복, 리듬, 대비, 반사, 관통, 감김, 회전, 분해, 주제부 중 소재에 맞는 핵심 단어만 골라 크게 배치한다. 형식적인 앵글명과 일반 설명은 줄인다.',
+  board_basic_design: '\n\n[추가 수정 지시 — 특징 라벨 강화]\n이 소재를 이 소재답게 보이게 하는 부위별 특징을 짧은 라벨(4~12자, 예: 둥근 원통 몸통 / 접혀 내린 삼각 귀 / 두 갈래 발굽)로 크게 붙이고, 가는 지시선이 해당 부위를 정확히 가리키게 한다. 주제부·확대·절단·리듬·반복·흐름 같은 구성 용어는 라벨로 쓰지 않는다. 한글 맞춤법을 반드시 확인한다.',
   board_less_text: '\n\n[추가 수정 지시 — 문장 제거]\n긴 문장, bullet 설명, 형식적인 분석 문구를 제거한다. 전체 포스터의 글자는 짧은 키워드/라벨 위주로 제한한다. 읽히는 글보다 이미지, 스케치, 화살표, 효과 표시, 큰 단어의 위계를 우선한다.',
-  board_more_diagrams: '\n\n[추가 수정 지시 — 효과 선명화]\n도해를 설명문으로 채우지 말고 화살표, 흐름선, 확대 박스, 절단선, 반복 리듬, 질감 대비 표시를 시각적으로 크게 보여준다. 필요한 단어는 한두 단어 라벨로만 붙인다.',
-  board_layout_like_sample: '\n\n[추가 수정 지시 — 키워드 보드]\nA4 세로형 비율은 유지하되 01~04를 크게 강조하지 않는다. 큰 이미지, 작은 스케치, 효과 표시, 하단 핵심 키워드 박스 중심으로 구성한다. 긴 설명문 없는 실전용 키워드 보드처럼 보이게 한다.',
+  board_more_diagrams: '\n\n[추가 수정 지시 — 도해 선명화]\n도해를 설명문으로 채우지 말고, 중심 스케치 위에 기본 도형 가이드선(구·원기둥·원뿔)과 부위 지시선을 선명하게 보여준다. 라벨은 부위+특징의 짧은 말로만 붙인다.',
+  board_layout_like_sample: '\n\n[추가 수정 지시 — 특징 보드]\nA4 세로형 비율은 유지하되 01~04를 크게 강조하지 않는다. 큰 이미지, 작은 스케치, 부위 지시선, 하단 핵심 특징 박스 중심으로 구성한다. 긴 설명문 없는 실전용 특징 보드처럼 보이게 한다.',
   board_subject_only: '\n\n[추가 수정 지시 — 선택 소재만 분석]\n시험지나 참고 이미지에 여러 소재가 보여도 이번 분석 보드는 현재 제시어의 소재 하나만 다룬다. 다른 소재를 관찰컷, 형태 분석, 질감 분석, 키워드, 동적 스케치에 섞지 않는다.'
 };
 
