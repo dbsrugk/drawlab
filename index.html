@@ -4911,7 +4911,9 @@ async function copyImageDataUrl(src){
   if(!navigator.clipboard || !window.ClipboardItem){
     throw new Error('이 브라우저가 이미지 클립보드를 지원하지 않습니다');
   }
-  const blob = await imageUrlToPngBlob(src);
+  // 다운로드와 같은 로고 설정 적용 (Promise로 넘겨야 클릭 직후 권한이 유지됨)
+  const mode = getMarkMode();
+  const blob = mode === 'none' ? imageUrlToPngBlob(src) : applyMark(src, mode);
   await navigator.clipboard.write([
     new ClipboardItem({'image/png': blob})
   ]);
